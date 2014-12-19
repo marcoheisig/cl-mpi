@@ -135,9 +135,6 @@ be 0.001"
       ;; TOOD default case
       )))
 
-(defgeneric mpi-send-vector (vec dest tag comm))
-(defmethod mpi-send-vector ((vec (vector ))))
-
 (defun mpi-receive (&key (source MPI_ANY_SOURCE)
                       (tag MPI_ANY_TAG)
                       (comm MPI_COMM_WORLD))
