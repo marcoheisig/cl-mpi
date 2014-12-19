@@ -1,0 +1,15 @@
+Author: Marco Heisig <marco.heisig@fau.de>
+
+
+* Changes from 0.1.0 to 0.2.0
+  - openmpi support out of the box
+  - MPI errors are reported via Common Lisp conditions
+  - big testsuite 5am
+
+* Future Plans
+  - High compatibility with all versions of the MPI standard
+  - all MPI 3.0 features
+
+* Testing
+
+  mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi)" --eval "(mpi:mpi-finalize)" 2>/dev/null
