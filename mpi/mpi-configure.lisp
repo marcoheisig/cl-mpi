@@ -3,11 +3,11 @@
 
 (in-package :mpi)
 
-;;; The MPI "standard" makes no specification of how to compile, link and run
-;;; a MPI application. This file contains magic to provide the MPI
-;;; functionality regardless of the implementation being used. Feel free to
-;;; contact me if your favourite MPI implementation (or the one you have to
-;;; use) does not work out of the box.
+;;;; The MPI "standard" makes no specification of how to compile, link and run
+;;;; a MPI application. This file contains magic to provide the MPI
+;;;; functionality regardless of the implementation being used. Feel free to
+;;;; contact me if your favourite MPI implementation (or the one you have to
+;;;; use) does not work out of the box.
 
 (defvar *mpi-header* "mpi.h")
 
@@ -24,17 +24,15 @@
                         libraries)))
           (unless libraries (error "no suitable MPI libraries found"))
           libraries))
-    (specify-libraries (libraries)
+    (specify-libraries ()
       :report "Specify the MPI libraries manually, something like '(\"libmpi.so\")"
       :interactive read)))
 
-(defvar *mpi-version*)
-
-;;; in openmpi many handles are actually pointers that cannot be grovelled
 (progn
   (setf cffi-grovel::*cc* "mpicc")
   (mapcar #'cffi:load-foreign-library *mpi-libraries*)
   (cond
+    ;; in openmpi many handles are actually pointers that cannot be grovelled
     ((cffi:foreign-symbol-pointer "ompi_mpi_comm_world")
      (pushnew :openmpi *features*)
      (macrolet ((defptr (name c_name)

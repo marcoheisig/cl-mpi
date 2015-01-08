@@ -6,6 +6,13 @@ Author: Marco Heisig <marco.heisig@fau.de>
   - MPI errors are reported via Common Lisp conditions
   - big testsuite 5am
 
+* Dependencies
+  - cffi
+  - cl-ppcre
+  - cl-conspack
+  - fast-io
+  - static-vectors
+
 * Future Plans
   - High compatibility with all versions of the MPI standard
   - all MPI 3.0 features

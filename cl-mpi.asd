@@ -6,7 +6,7 @@
   :author "Marco Heisig <marco.heisig@fau.de>"
   :version "0.2.0"
   :license "MIT"
-  :depends-on (:cffi :cl-ppcre :cl-conspack)
+  :depends-on (:cffi :cl-ppcre :cl-conspack :static-vectors)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
   :components
   ((:module "mpi"

@@ -57,7 +57,7 @@
   )
 
 ;; error constants
-(constantenum (MPI_Error :define-constants t) ; optional t -> more robust against lousy headers
+(constantenum (MPI_Error :define-constants t)
               ((:MPI_SUCCESS "MPI_SUCCESS"))
               ((:MPI_ERR_BUFFER "MPI_ERR_BUFFER"))
               ((:MPI_ERR_COUNT "MPI_ERR_COUNT"))

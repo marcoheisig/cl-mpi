@@ -63,7 +63,7 @@ communications involving a process completes before the process calls
 MPI-FINALIZE."
   (MPI_Finalize))
 
-(defun mpi-abort(&key (comm MPI_COMM_WORLD)(errcode -1))
+(defun mpi-abort(&key (comm MPI_COMM_WORLD) (errcode -1))
   "This routine makes a 'best attempt' to abort all tasks in the group of
 comm. This function does not require that the invoking environment take any
 action with the error code. However, a Unix or POSIX environment should handle
@@ -72,14 +72,6 @@ this as a return errorcode from the main program or an abort(errorcode)."
     (setf (cffi:mem-aref c-errcode :int) errcode)
     (MPI_Abort comm (cffi:mem-aref c-errcode :int))
     c-errcode))
-
-(defmacro with-mpi (&body body)
-  "executes body in an MPI environment (initializes and finalizes MPI
-before/after body)"
-  `(progn
-     (mpi-init)
-     (unwind-protect (progn ,@body)
-       (mpi-finalize))))
 
 (defun mpi-get-processor-name ()
   "This routine returns the name of the processor on which it was called at
@@ -120,33 +112,30 @@ be 0.001"
   call."
   (MPI_Barrier comm))
 
-(defun mpi-send (object dest &key (tag 0) (comm MPI_COMM_WORLD))
-  (let* ((data (conspack:encode object))
-         (count (array-total-size data)))
+;;; MPI sends only raw bytes or arrays of numeric types. I use the conspack
+;;; library to convert any given lisp object to raw bytes and decode it again
+;;; at the receiver side. Luckily conspack uses fast-io which can use
+;;; static-vector to directly write the data to static memory for transport
+;;; via MPI.
 
+(defun mpi-send (dest object &key (tag 0) (comm MPI_COMM_WORLD))
+  (let* ((data (conspack:encode object :stream :static))
+         (size (array-total-size data)))
+    ;; first message: number of bytes being transmitted
     (cffi:with-foreign-object (count-buf :int)
-      (setf (cffi:mem-ref count-buf :int) count)
-      (MPI_Send count-buf 1 MPI_INT dest 42 comm)
+      (setf (cffi:mem-ref count-buf :int) size)
+      (MPI_Send count-buf 1 MPI_INT dest 0 comm))
+    ;; second message: actual data
+    (MPI_Send (static-vectors:static-vector-pointer data) size MPI_BYTE dest tag comm)
+    (static-vectors:free-static-vector data)))
 
-      #+sbcl
-      (sb-sys:with-pinned-objects (data)
-        (let ((buf (sb-sys:vector-sap (sb-ext:array-storage-vector data))))
-          (MPI_Send buf count MPI_BYTE dest tag comm)))
-      ;; TOOD default case
-      )))
-
-(defun mpi-receive (&key (source MPI_ANY_SOURCE)
-                      (tag MPI_ANY_TAG)
-                      (comm MPI_COMM_WORLD))
+(defun mpi-receive (source &key (tag MPI_ANY_TAG) (comm MPI_COMM_WORLD))
+  ;; first message: number of bytes being transmitted
   (cffi:with-foreign-object (count-buf :int)
-    (MPI_Recv count-buf 1 MPI_INT source 42 comm (cffi:null-pointer))
+    (MPI_Recv count-buf 1 MPI_INT source 0 comm (cffi:null-pointer))
+    ;; second message: actual data
     (let* ((count (cffi:mem-ref count-buf :int))
-           (data (make-array count :element-type '(unsigned-byte 8))))
-
-      #+sbcl
-      (sb-sys:with-pinned-objects (data)
-        (let ((buf (sb-sys:vector-sap (sb-ext:array-storage-vector data))))
-          (MPI_Recv buf count MPI_BYTE source tag comm (cffi:null-pointer))))
-
-      ;; TOOD default case
-      (conspack:decode data))))
+           (data (static-vectors:make-static-vector count :element-type '(unsigned-byte 8))))
+      (MPI_Recv (static-vectors:static-vector-pointer data) count MPI_BYTE source tag comm (cffi:null-pointer))
+      (prog1 (conspack:decode data)
+        (static-vectors:free-static-vector data)))))
