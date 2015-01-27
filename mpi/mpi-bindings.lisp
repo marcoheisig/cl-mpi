@@ -32,47 +32,26 @@ THE SOFTWARE.
   (:simple-parser mpi-error-code))
 
 (define-condition mpi-error-condition (error)
-  (($code :initarg :keyword :reader mpi-error-keyword))
-  (:report (lambda (c stream)
-             (format stream "MPI function returned error ~A"
-                     (mpi-error-keyword c))))
-  (:documentation "Signalled when a MPI function answers
-a code other than MPI_SUCCESS."))
+  ((error-code :initarg :error-code :reader error-code))
+  (:report (lambda (c stream) (princ (mpi-error-string (error-code c)) stream)))
+  (:documentation "Signalled when a MPI function returns a code other than MPI_SUCCESS."))
 
 (defmethod cffi:translate-from-foreign (value (type mpi-error-type))
   "Raise a MPI-CODE-ERROR if VALUE, a mpi-code, is non-zero."
-  (if (zerop value) t
-      (restart-case (error 'mpi-error-condition
-                           :keyword (cffi:foreign-enum-keyword 'MPI_Error value))
-        (ignore () t))))
+  (unless (zerop value)
+    (restart-case
+        (error 'mpi-error-condition :error-code value)
+      (ignore () nil))))
 
-;;; Bindings for all avilable MPI functions as specified in the MPI Standard.
-(defmacro defmpifun (name &rest rest)
-  `(cffi:defcfun ,name mpi-error-code ,@rest))
-
-;; Point-to-Point Communication C Bindings
-(defmpifun "MPI_Bsend" (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
-
-(cffi:defcfun ("MPI_Initialized" MPI_Initialized) mpi-error-code (flag :pointer))
-(cffi:defcfun ("MPI_Init" MPI_Init) mpi-error-code (argc :pointer) (argv :pointer))
-(cffi:defcfun ("MPI_Finalize" MPI_Finalize) mpi-error-code)
-(cffi:defcfun ("MPI_Comm_rank" MPI_Comm_rank) mpi-error-code (communicator MPI_Comm)(myid :pointer))
-(cffi:defcfun ("MPI_Comm_size" MPI_Comm_size) mpi-error-code (communicator MPI_Comm)(numprocs :pointer))
-(cffi:defcfun ("MPI_Get_processor_name" MPI_Get_processor_name) mpi-error-code (processor_name :string) (namelen :pointer))
-(cffi:defcfun ("MPI_Barrier" MPI_Barrier) mpi-error-code (communicator MPI_Comm))
-(cffi:defcfun ("MPI_Wtime" MPI_Wtime) :double )
-(cffi:defcfun ("MPI_Wtick" MPI_Wtick) :double )
-(cffi:defcfun ("MPI_Abort" MPI_Abort) mpi-error-code (comm MPI_Comm) (errorcode :int))
-
-(cffi:defcfun ("MPI_Get_count" MPI_Get_count) mpi-error-code (status :pointer) (datatype MPI_Datatype) (count :pointer))
-
-  ;; blocking communication
+;;; blocking communication
+(cffi:defcfun ("MPI_Bsend" MPI_Bsend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
 (cffi:defcfun ("MPI_Recv" MPI_Recv) mpi-error-code (buf :pointer)(count :int) (datatype MPI_Datatype)(source :int)(tag :int)(comm MPI_Comm)(status :pointer))
 (cffi:defcfun ("MPI_Send" MPI_Send) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
 (cffi:defcfun ("MPI_Ssend" MPI_Ssend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
 (cffi:defcfun ("MPI_Rsend" MPI_Rsend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
 (cffi:defcfun ("MPI_Buffer_attach" MPI_Buffer_attach) mpi-error-code (buf :pointer) (count :int))
 (cffi:defcfun ("MPI_Buffer_detach" MPI_Buffer_detach) mpi-error-code (buf :pointer) (count-ptr :pointer))
+(cffi:defcfun ("MPI_Get_count" MPI_Get_count) mpi-error-code (status :pointer) (datatype MPI_Datatype) (count :pointer))
 
 (cffi:defcfun ("MPI_Sendrecv" MPI_Sendrecv) mpi-error-code
   (send-buf :pointer)(send-count :int) (send-datatype MPI_Datatype)(dest :int) (send-tag :int)
@@ -81,7 +60,7 @@ a code other than MPI_SUCCESS."))
 
 (cffi:defcfun ("MPI_Probe" MPI_Probe) mpi-error-code (source :int)(tag :int)(communicator MPI_Comm)  (status :pointer))
 
-  ;; non blocking communication
+;;; non blocking communication
 (cffi:defcfun ("MPI_Isend" MPI_Isend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm)(request :pointer))
 (cffi:defcfun ("MPI_Ibsend" MPI_Ibsend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm)(request :pointer))
 (cffi:defcfun ("MPI_Issend" MPI_Issend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm)(request :pointer))
@@ -97,7 +76,7 @@ a code other than MPI_SUCCESS."))
 (cffi:defcfun ("MPI_Testany" MPI_Testany) mpi-error-code (count :int) (requests :pointer) (index :pointer)(flag :pointer) (statuses :pointer))
 (cffi:defcfun ("MPI_Testsome" MPI_Testsome) mpi-error-code (count :int)(requests :pointer)(outcount :pointer)(completed-indices :pointer)(statuses :pointer))
 
-  ;; collective operations
+;;; collective operations
 (cffi:defcfun ("MPI_Bcast" MPI_Bcast) :int (buf :pointer) (count :int) (datatype MPI_Datatype) (root :int) (comm MPI_Comm))
 (cffi:defcfun ("MPI_Reduce" MPI_Reduce) :int (sendbuf :pointer) (recvbuf :pointer)(count :int)(datatype MPI_datatype)(op MPI_Op)(root :int)(comm MPI_Comm))
 (cffi:defcfun ("MPI_Allreduce" MPI_Allreduce) :int (sendbuf :pointer) (recvbuf :pointer)(count :int)(datatype MPI_datatype)(op MPI_Op)(comm MPI_Comm))

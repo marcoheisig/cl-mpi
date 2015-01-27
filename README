@@ -20,3 +20,5 @@ Author: Marco Heisig <marco.heisig@fau.de>
 * Testing
 
   mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi)" --eval "(mpi:mpi-finalize)" 2>/dev/null
+
+  mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi-benchmarks)" --eval "(mpi:mpi-finalize)" 2>/dev/null

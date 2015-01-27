@@ -1,7 +1,8 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (asdf:load-system 'cffi-grovel))
+  (asdf:load-system 'cffi-grovel)
+  )
 
-(asdf:defsystem cl-mpi
+(asdf:defsystem :cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
   :author "Marco Heisig <marco.heisig@fau.de>"
   :version "0.2.0"
