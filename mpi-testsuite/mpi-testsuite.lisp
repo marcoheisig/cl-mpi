@@ -1,29 +1,43 @@
 (defpackage :mpi-testsuite
-  (:use #:cl #:mpi #:5am #:uiop))
+  (:use #:cl #:mpi #:5am #:uiop #:cffi))
 
 (in-package :mpi-testsuite)
 
-(5am:def-suite mpi-testsuite :description "All MPI related tests.")
+(def-suite mpi-testsuite :description "All MPI related tests.")
 
-(5am:in-suite mpi-testsuite)
+(in-suite mpi-testsuite)
 
-(5am:test (mpi-init)
+(test (mpi-init)
   "MPI Initialization"
   (mpi-init)
   (is (mpi-initialized) "failed to initialize MPI (or mpi-initialized is broken)"))
 
-(5am:test (error-handling :depends-on mpi-init)
+(test (error-handling :depends-on mpi-init)
   "Test whether MPI errors are properly handled"
-  (5am:is (= 0 (cffi:foreign-enum-value 'MPI::mpi_error :MPI_SUCCESS))))
+  (is (stringp (mpi-error-string 0))))
 
-(5am:test (size-and-rank :depends-on mpi-init)
+(test (size-and-rank :depends-on mpi-init)
   "Checking whether it is possible to determine size and rank"
   (let ((size (mpi-comm-size))
         (rank (mpi-comm-rank)))
     (is (> size 0) "Invalid size of MPI_COMM_WORLD")
     (is (> size rank -1) "Invalid MPI rank")))
 
-(5am:test (parallel :depends-on size-and-rank)
+(test (processor-name :depends-on mpi-init)
+  "The function mpi-get-processor-name should return a string describing the
+  current processor in use"
+  (let ((processor-name (mpi-get-processor-name)))
+    (is (stringp processor-name))
+    (is (< 0 (length processor-name)))))
+
+(test (serial-groups :depends-on mpi-init)
+  "MPI group tests that can be run on a single process"
+  (let* ((all-procs (mpi-comm-group MPI_COMM_WORLD))
+         (first-proc (mpi-group-select-from all-procs 0)))
+    (is (< 0 (mpi-group-size all-procs)))
+    (is (= 1 (mpi-group-size first-proc)))))
+
+(test (parallel :depends-on size-and-rank)
   "Is there more than one MPI process"
   (let ((size (mpi-comm-size))
         (rank (mpi-comm-rank)))
@@ -31,8 +45,35 @@
     (unless (zerop rank) ;; discard the output of all but one MPI process
       (setf *test-dribble* (make-broadcast-stream)))))
 
-(5am:test (mpi-ring :depends-on parallel)
-  "Send one message through all nodes"
+(test (foreign-send :depends-on parallel)
+  "Send a foreign array through all nodes"
+  (let ((rank (mpi-comm-rank))
+        (size (mpi-comm-size))
+        (message-length 42))
+    (let ((left-neighbor  (mod (- rank 1) size))
+          (right-neighbor (mod (+ rank 1) size))
+          (tag 42))
+      (with-foreign-objects
+          ((send-buffer :int message-length)
+           (recv-buffer :int message-length))
+        (loop for i from 0 below message-length do
+             (setf (mem-aref send-buffer :int i) i))
+        (cond ((= 0 rank)
+               (mpi:mpi-send-foreign right-neighbor send-buffer message-length :int :tag tag)
+               (multiple-value-bind (source tag)
+                   (mpi:mpi-receive-foreign left-neighbor recv-buffer message-length :int :tag tag)
+                 (is (= source left-neighbor))
+                 (is (= tag tag))
+                 (is (loop for i from 0 below message-length
+                        unless (= (mem-aref recv-buffer :int i) i)
+                        do (return nil)
+                        finally (return t)))))
+              (t
+               (mpi:mpi-receive-foreign left-neighbor recv-buffer message-length :int :tag tag)
+               (mpi:mpi-send-foreign right-neighbor send-buffer message-length :int :tag tag)))))))
+
+(test (mpi-ring :depends-on parallel)
+  "Send a Common Lisp array through all nodes"
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
     (let ((left-neighbor  (mod (- rank 1) size))
@@ -42,4 +83,4 @@
              (is (equalp '(3 different "elements") (mpi:mpi-receive left-neighbor))))
             (t
              (mpi:mpi-send right-neighbor
-              (mpi:mpi-receive left-neighbor)))))))
+                           (mpi:mpi-receive left-neighbor)))))))

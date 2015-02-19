@@ -1,12 +1,10 @@
-(defpackage #:mpi
-  (:nicknames #:cl-mpi)
+(defpackage :mpi
+  (:nicknames cl-mpi)
   (:documentation "CL-MPI: Common Lisp bindings for the Message Passing Interface MPI")
-  (:use #:cl)
+  (:use cl cffi)
   (:export
-   ;; error handling
-   mpi-error
-   report-error
    ;; constants and handles
+   MPI_STATUS_IGNORE
    MPI_COMM_WORLD ;; communicators
    MPI_COMM_SELF
    MPI_COMM_NULL
@@ -45,17 +43,32 @@
    MPI_MINLOC
    MPI_REPLACE
    MPI_NO_OP
+   MPI_Errhandler
+   MPI_Status
+   MPI_Comm
+   MPI_Group
+   MPI_Op
+   MPI_Datatype
    ;; functions
    mpi-init ;; environment
    mpi-initialized
    mpi-finalize
    mpi-comm-rank
    mpi-comm-size
+   mpi-comm-group
+   mpi-group-size
+   mpi-group-select-from
    mpi-get-processor-name
    mpi-barrier
    mpi-wtime
    mpi-wtick
    mpi-abort
+   mpi-send-foreign
+   mpi-receive-foreign
    mpi-send
    mpi-receive
+   mpi-error-string
    ))
+
+(defpackage :mpi-header
+  (:documentation "All constants extracted from mpi.h"))

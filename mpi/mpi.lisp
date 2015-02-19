@@ -28,10 +28,8 @@ THE SOFTWARE.
 
 (defmacro defmpifun (c-name &rest rest)
   (let ((name (intern (string-upcase c-name))))
-    `(cffi:defcfun (,c-name ,name) mpi-error-code ,@rest)))
+    `(defcfun (,c-name ,name) mpi-error-code ,@rest)))
 
-(defmpifun "MPI_Comm_set_errhandler" (comm MPI_Comm) (errhandler MPI_Errhandler))
-(defmpifun "MPI_Init" (argc :pointer) (argv :pointer))
 (defun mpi-init ()
   "This routine must be called before any other MPI routine. It must be called
 at most once; subsequent calls are erroneous (see MPI-INITIALIZED).
@@ -39,20 +37,20 @@ at most once; subsequent calls are erroneous (see MPI-INITIALIZED).
 All MPI programs must contain a call to MPI-INIT; this routine must be called
 before any other MPI routine (apart from MPI-INITIALIZED) is called."
   (unless (mpi-initialized)
-    (MPI_Init (cffi:null-pointer) (cffi:null-pointer))
+    (MPI_Init (null-pointer) (null-pointer))
     ;; by default MPI reacts to each failure by crashing the process. This is
     ;; not the Lisp way of doing things. The following call makes error
     ;; non-fatal in most cases.
-    (MPI_COMM_SET_ERRHANDLER MPI_COMM_WORLD MPI_ERRORS_RETURN)))
+    (MPI_Comm_set_errhandler MPI_COMM_WORLD MPI_ERRORS_RETURN)))
 
 (defmpifun "MPI_Initialized" (flag :pointer))
 (defun mpi-initialized ()
   "Returns true if MPI_INIT has been called and nil otherwise.
    This routine may be used to determine whether MPI-INIT has been called. It
    is the only routine that may be called before MPI-INIT is called."
-  (cffi:with-foreign-object (flag :int)
+  (with-foreign-object (flag :int)
     (MPI_Initialized flag)
-    (= 1 (cffi:mem-ref flag :int))))
+    (= 1 (mem-ref flag :int))))
 
 (defmpifun "MPI_Finalize")
 (defun mpi-finalize ()
@@ -68,9 +66,9 @@ MPI-FINALIZE."
 comm. This function does not require that the invoking environment take any
 action with the error code. However, a Unix or POSIX environment should handle
 this as a return errorcode from the main program or an abort(errorcode)."
-  (cffi:with-foreign-object (c-errcode :int)
-    (setf (cffi:mem-aref c-errcode :int) errcode)
-    (MPI_Abort comm (cffi:mem-aref c-errcode :int))
+  (with-foreign-object (c-errcode :int)
+    (setf (mem-aref c-errcode :int) errcode)
+    (MPI_Abort comm (mem-aref c-errcode :int))
     c-errcode))
 
 (defmpifun "MPI_Get_processor_name" (processor_name :string) (namelen :pointer))
@@ -81,21 +79,21 @@ flexibility. From this value it must be possible to identify a specific piece
 of hardware; possible values include 'processor 9 in rack 4 of mpp.cs.org' and
 '231' (where 231 is the actual processor number in the running homogeneous
 system)."
-  (cffi:with-foreign-object (namelen :int)
-    (cffi:with-foreign-pointer (processor-name MPI_MAX_PROCESSOR_NAME)
+  (with-foreign-object (namelen :int)
+    (with-foreign-pointer (processor-name MPI_MAX_PROCESSOR_NAME)
       (MPI_Get_processor_name processor-name namelen)
-      (values (cffi:foreign-string-to-lisp processor-name
-                                           :count (cffi:mem-aref namelen :int))))))
+      (values (foreign-string-to-lisp processor-name
+                                           :count (mem-aref namelen :int))))))
 
 (defmpifun "MPI_Error_string" (errorcode :int) (string :pointer) (resultlen :pointer))
 (defun mpi-error-string (errorcode)
-  (cffi:with-foreign-object (strlen :int)
-    (cffi:with-foreign-pointer (error-string MPI_MAX_ERROR_STRING)
+  (with-foreign-object (strlen :int)
+    (with-foreign-pointer (error-string MPI_MAX_ERROR_STRING)
       (MPI_Error_String errorcode error-string strlen)
-      (values (cffi:foreign-string-to-lisp error-string
-                                           :count (cffi:mem-aref strlen :int))))))
+      (values (foreign-string-to-lisp error-string
+                                           :count (mem-aref strlen :int))))))
 
-(cffi:defcfun "MPI_Wtime" :double
+(defcfun "MPI_Wtime" :double
   "Returns a (double) floating-point number of seconds, representing elapsed
 wall-clock time since some time in the past.
 
@@ -106,7 +104,7 @@ seconds, not 'ticks'), it allows high-resolution, and carries no unnecessary
 baggage.  The times returned are local to the node that called them. There is
 no requirement that different nodes return 'the same time.'")
 
-(cffi:defcfun "MPI_Wtick" :double
+(defcfun "MPI_Wtick" :double
   "Returns the resolution of MPI-WTIME in seconds. That is, it returns, as a
 double precision value, the number of seconds between successive clock
 ticks. For example, if the clock is implemented by the hardware as a counter
@@ -120,18 +118,54 @@ be 0.001")
   call."
   (MPI_Barrier comm))
 
-;;; MPI sends only raw bytes or arrays of numeric types. I use the conspack
-;;; library to convert any given lisp object to raw bytes and decode it again
-;;; at the receiver side. Luckily conspack uses fast-io which can use
-;;; static-vector to directly write the data to static memory for transport
-;;; via MPI.
+(declaim (inline cffi-type-to-mpi-type))
+(defun cffi-type-to-mpi-type (cffi-type)
+  "Convert :int to MPI_INT and so on"
+  (declare (type keyword cffi-type))
+  (case cffi-type
+    ((:byte) MPI_BYTE)
+    ((:char) MPI_CHAR)
+    ((:uchar :unsigned-char) MPI_UNSIGNED_CHAR)
+    ((:short) MPI_SHORT)
+    ((:ushort :unsigned-short) MPI_UNSIGNED_SHORT)
+    ((:int) MPI_INT)
+    ((:uint :unsigned-int) MPI_UNSIGNED)
+    ((:long) MPI_LONG)
+    ((:ulong :unsigned-long) MPI_UNSIGNED_LONG)
+    ((:llong :long-long) MPI_LONG_LONG_INT)
+    ((:ullong :unsigned-long-long) MPI_UNSIGNED_LONG_LONG)
+    ((:float) MPI_FLOAT)
+    ((:double) MPI_DOUBLE)
+    ((:long-double) MPI_LONG_DOUBLE)
+    (t (error "invalid cffi-type"))))
+
+(defun mpi-send-foreign (dest foreign-pointer size cffi-type
+                         &key (tag 0) (comm MPI_COMM_WORLD))
+  "Send data to the MPI process specified by the integers DEST and
+  TAG. FOREIGN-POINTER must point to a foreign-array with SIZE elements of
+  type CFFI-TYPE."
+  (declare (type (signed-byte 32) dest size tag))
+  (MPI_Send foreign-pointer size (cffi-type-to-mpi-type cffi-type) dest tag comm))
+
+(defun mpi-receive-foreign (source foreign-pointer size cffi-type
+                            &key (tag MPI_ANY_TAG) (comm MPI_COMM_WORLD))
+  "Receive data from the MPI process specified by the integers SOURCE and
+  TAG. FOREIGN-POINTER must point to a foreign-array with SIZE elements of
+  type CFFI-TYPE."
+  (declare (type (signed-byte 32) source size tag))
+  (with-foreign-object (mpi-status '(:struct MPI_Status))
+    (MPI_Recv foreign-pointer size (cffi-type-to-mpi-type cffi-type) source tag comm mpi-status)
+    (with-foreign-slots ((MPI_SOURCE MPI_TAG MPI_ERROR) mpi-status (:struct MPI_Status))
+      (unless (zerop MPI_ERROR) (signal-mpi-error MPI_ERROR))
+      (values MPI_SOURCE MPI_TAG))))
 
 (defun mpi-send (dest object &key (tag 0) (comm MPI_COMM_WORLD))
+  (declare (type (signed-byte 32) dest tag))
   (let* ((data (conspack:encode object :stream :static))
          (size (length data)))
     ;; first message: number of bytes being transmitted
-    (cffi:with-foreign-objects (count-buf :int)
-      (setf (cffi:mem-ref count-buf :int) size)
+    (with-foreign-object (count-buf :int)
+      (setf (mem-ref count-buf :int) size)
       (MPI_Send count-buf 1 MPI_INT dest 0 comm))
     ;; second message: actual data
     (MPI_Send (static-vectors:static-vector-pointer data) size MPI_BYTE dest tag comm)
@@ -139,60 +173,47 @@ be 0.001")
 
 (defun mpi-receive (source &key (tag MPI_ANY_TAG) (comm MPI_COMM_WORLD))
   ;; first message: number of bytes being transmitted
-  (cffi:with-foreign-objects ((count-buf :int)
-                              (status MPI_Status))
-    (MPI_Recv count-buf 1 MPI_INT source 0 comm (cffi:inc-pointer (cffi:null-pointer) 1))
+  (with-foreign-objects ((count-buf :int)
+                         (status '(:struct MPI_Status)))
+    (MPI_Recv count-buf 1 MPI_INT source 0 comm MPI_STATUS_IGNORE)
     ;; second message: actual data
-    (let* ((count (cffi:mem-ref count-buf :int))
+    (let* ((count (mem-ref count-buf :int))
            (data (static-vectors:make-static-vector count :element-type '(unsigned-byte 8))))
-      (MPI_Recv (static-vectors:static-vector-pointer data) count MPI_BYTE source tag comm MPI_Status)
+      (MPI_Recv (static-vectors:static-vector-pointer data) count MPI_BYTE source tag comm status)
       (prog1 (conspack:decode data)
         (static-vectors:free-static-vector data)))))
 
 ;; TODO (defun mpi-sendrecv (source dest object &key (sendtag 0) (recvtag MPI_ANY_TAG) (comm MPI_COMM_WORLD)) )
 
-;; TODO use CLOS classes
-(defvar MPI_Group #+openmpi :pointer #-openmpi :int)
-(defvar MPI_Comm  #+openmpi :pointer #-openmpi :int)
-
-(defmpifun "MPI_Comm_group" (comm MPI_Comm) (group :pointer))
+(defmpifun "MPI_Comm_group" (comm MPI_Comm) (group MPI_Group))
 (defun mpi-comm-group (comm)
-  (cffi:with-foreign-object (newgroup MPI_Group)
+  (with-foreign-object (newgroup 'MPI_Group)
     (MPI_comm_group comm newgroup)
-    (cffi:mem-ref newgroup MPI_Group)))
+    (mem-ref newgroup 'MPI_Group)))
 
-(defmpifun "MPI_Group_size" (group MPI_Group) (size :pointer))
+(defmpifun "MPI_Group_size" (group MPI_Group) (size (:pointer :int)))
 (defun mpi-group-size (group)
-  (cffi:with-foreign-object (size :int)
+  (with-foreign-object (size :int)
     (MPI_Group_size group size)
-    (cffi:mem-ref size :int)))
+    (mem-ref size :int)))
 
-(defmpifun "MPI_Group_rank" (group MPI_Group) (rank :pointer))
+(defmpifun "MPI_Group_rank" (group MPI_Group) (rank (:pointer :int)))
 (defun mpi-group-rank (group)
-  (cffi:with-foreign-object (rank :int)
+  (with-foreign-object (rank :int)
     (MPI_Group_rank group rank)
-    (cffi:mem-ref rank :int)))
+    (mem-ref rank :int)))
 
 (defmpifun "MPI_Group_union" (group1 MPI_Group) (group2 MPI_Group) (newgroup :pointer))
 (defun mpi-group-union (group1 group2)
-    (cffi:with-foreign-object (newgroup MPI_Group)
+    (with-foreign-object (newgroup 'MPI_Group)
     (MPI_Group_union group1 group2 newgroup)
-    (cffi:mem-ref newgroup MPI_Group)))
+    (mem-ref newgroup 'MPI_Group)))
 
 (defmpifun "MPI_Group_intersection" (group1 MPI_Group) (group2 MPI_Group) (newgroup :pointer))
 ;; TODO
 
 (defmpifun "MPI_Group_difference" (group1 :pointer) (group2 :pointer) (newgroup :pointer))
 ;; TODO
-
-(defmpifun "MPI_Group_incl" (group MPI_Group) (n :int) (ranks :pointer) (newgroup :pointer))
-(defun mpi-group-incl (group ranks)
-  (let ((n (length ranks)))
-    (cffi:with-foreign-objects ((array :int n) (newgroup MPI_Group))
-      (dotimes (i n)
-        (setf (cffi:mem-aref array :int i) (aref ranks i)))
-      (MPI_Group_incl group n array newgroup)
-      (cffi:mem-ref newgroup MPI_Group))))
 
 (defmpifun "MPI_Group_range_incl" (group MPI_Group) (n :int) (ranges :pointer) (newgroup :pointer))
 (defun mpi-group-select-from (group &rest ranges)
@@ -201,7 +222,7 @@ be 0.001")
   - an integer
   - a list of the form (first-rank last-rank &optional step-size)"
   (let ((n (length ranges)))
-    (cffi:with-foreign-objects ((mem :int (* 3 n)) (newgroup MPI_Group))
+    (with-foreign-objects ((mem :int (* 3 n)) (newgroup 'MPI_Group))
       (loop for range-spec in ranges and i from 0 by 3
          with step-size = 1 and last-rank and first-rank do
            (cond
@@ -213,11 +234,11 @@ be 0.001")
               (setf last-rank (cadr range-spec))
               (setf step-size (if (cddr range-spec) (caddr range-spec) 1)))
              (t (error "invalid range spec")))
-           (setf (cffi:mem-aref mem :int (+ i 0)) first-rank)
-           (setf (cffi:mem-aref mem :int (+ i 1)) last-rank)
-           (setf (cffi:mem-aref mem :int (+ i 2)) step-size))
+           (setf (mem-aref mem :int (+ i 0)) first-rank)
+           (setf (mem-aref mem :int (+ i 1)) last-rank)
+           (setf (mem-aref mem :int (+ i 2)) step-size))
       (MPI_Group_range_incl group n mem newgroup)
-      (cffi:mem-ref newgroup MPI_Group))))
+      (mem-ref newgroup 'MPI_Group))))
 
 (defmpifun "MPI_Group_excl" (group :pointer) (n :int) (ranks :pointer) (newgroup :pointer))
 (defmpifun "MPI_Group_free" (group MPI_Group))
@@ -227,19 +248,19 @@ be 0.001")
 (defun mpi-comm-size (&optional (comm MPI_COMM_WORLD))
   "Indicates the number of processes involved in a communicator. For
 MPI_COMM_WORLD, it indicates the total number of processes available."
-  (cffi:with-foreign-object (numprocs :int)
+  (with-foreign-object (numprocs :int)
     (MPI_comm_size comm numprocs)
-    (cffi:mem-ref numprocs :int)))
+    (mem-ref numprocs :int)))
 
 (defmpifun "MPI_Comm_rank" (communicator MPI_Comm)(myid :pointer))
 (defun mpi-comm-rank (&optional (comm MPI_COMM_WORLD))
   "Returns the rank of the process in a given communicator."
-  (cffi:with-foreign-object (rank :int)
+  (with-foreign-object (rank :int)
     (MPI_Comm_rank comm rank)
-    (cffi:mem-ref rank :int)))
+    (mem-ref rank :int)))
 
 (defmpifun "MPI_Comm_create" (communicator MPI_Comm) (group MPI_Group) (newcomm :pointer))
 (defun mpi-comm-create (group &key (comm MPI_COMM_WORLD))
-  (cffi:with-foreign-object (newcomm MPI_Comm)
+  (with-foreign-object (newcomm 'MPI_Comm)
     (MPI_Comm_create comm group newcomm)
-    (cffi:mem-ref newcomm MPI_Comm)))
+    (mem-ref newcomm 'MPI_Comm)))

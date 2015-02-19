@@ -1,6 +1,12 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (asdf:load-system 'cffi-grovel)
-  )
+  (asdf:load-system 'cffi-grovel))
+
+;; use "mpicc" as compiler for all mpi related cffi-grovel files
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod asdf:perform :around
+    ((op cffi-grovel::process-op) (c cffi-grovel:grovel-file))
+             (let ((cffi-grovel::*cc* "mpicc"))
+               (call-next-method))))
 
 (asdf:defsystem :cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
@@ -13,8 +19,9 @@
   ((:module "mpi"
             :serial t
             :components
-            ((:file "package")
-             (:file "mpi-configure")
+            ((:file "packages")
              (cffi-grovel:grovel-file "mpi-grovel")
+             (:file "mpi-configure")
              (:file "mpi-bindings")
-             (:file "mpi")))))
+             (:file "mpi")
+             ))))
