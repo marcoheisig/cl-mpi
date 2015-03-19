@@ -1,5 +1,5 @@
 (defpackage :mpi-testsuite
-  (:use #:cl #:mpi #:5am #:uiop #:cffi))
+  (:use :cl :mpi :5am :uiop :cffi))
 
 (in-package :mpi-testsuite)
 
@@ -9,8 +9,7 @@
 
 (test (mpi-init)
   "MPI Initialization"
-  (mpi-init)
-  (is (mpi-initialized) "failed to initialize MPI (or mpi-initialized is broken)"))
+  (is (mpi-initialized) "failed to initialize MPI (or cl-mpi is broken)"))
 
 (test (error-handling :depends-on mpi-init)
   "Test whether MPI errors are properly handled"
@@ -45,7 +44,7 @@
     (unless (zerop rank) ;; discard the output of all but one MPI process
       (setf *test-dribble* (make-broadcast-stream)))))
 
-(test (foreign-send :depends-on parallel)
+(test (mpi-ring-foreign :depends-on parallel)
   "Send a foreign array through all nodes"
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size))
@@ -56,6 +55,7 @@
       (with-foreign-objects
           ((send-buffer :int message-length)
            (recv-buffer :int message-length))
+        ;; initialize send buffer with ascending integers
         (loop for i from 0 below message-length do
              (setf (mem-aref send-buffer :int i) i))
         (cond ((= 0 rank)
@@ -73,7 +73,8 @@
                (mpi:mpi-send-foreign right-neighbor send-buffer message-length :int :tag tag)))))))
 
 (test (mpi-ring :depends-on parallel)
-  "Send a Common Lisp array through all nodes"
+  "Send a Common Lisp datastructure through all nodes"
+  (force-output)
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
     (let ((left-neighbor  (mod (- rank 1) size))
@@ -84,3 +85,25 @@
             (t
              (mpi:mpi-send right-neighbor
                            (mpi:mpi-receive left-neighbor)))))))
+
+(test (mpi-sendreceive-foreign :depends-on parallel)
+  "Send a foreign array through all nodes via mpi-sendreceive-foreign"
+  (let ((rank (mpi-comm-rank))
+        (size (mpi-comm-size))
+        (message-length 42))
+    (let ((left-neighbor  (mod (- rank 1) size))
+          (right-neighbor (mod (+ rank 1) size))
+          (tag 42))
+      (with-foreign-objects
+          ((send-buffer :int message-length)
+           (recv-buffer :int message-length))
+        ;; initialize send buffer with ascending integers
+        (loop for i from 0 below message-length do
+          (setf (mem-aref send-buffer :int i) i))
+        (mpi-sendreceive-foreign right-neighbor send-buffer message-length :int
+                                 left-neighbor  recv-buffer message-length :int
+                                 :send-tag tag :recv-tag tag)
+        (is (loop for i from 0 below message-length
+                        unless (= (mem-aref recv-buffer :int i) i)
+                        do (return nil)
+                        finally (return t)))))))

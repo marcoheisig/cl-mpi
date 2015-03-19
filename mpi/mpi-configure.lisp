@@ -27,7 +27,10 @@
       :report "Specify the MPI libraries manually, something like (\"libmpi.so\")"
       :interactive read)))
 
-(defvar *mpi-libraries* (detect-mpi-libraries))
+(defvar *mpi-libraries* nil)
+
+(declaim (type (member :openmpi :mpich :mpich2 :unknown) *mpi-implementation*))
+(defvar *mpi-implementation* :unknown)
 
 (defun configure-mpi ()
   (setf *mpi-libraries* (detect-mpi-libraries))
@@ -37,13 +40,16 @@
     ((or (boundp 'mpi-header::OPEN_MPI)
          (boundp 'mpi-header::OMPI_MAJOR_VERSION)
          (foreign-symbol-pointer "ompi_mpi_comm_world"))
-     (pushnew :openmpi *features*))
+     (pushnew :openmpi *features*)
+     (setf *mpi-implementation* :openmpi))
     ;; mpich
     ((boundp 'mpi-header::MPICH)
-     (pushnew :mpich *features*))
+     (pushnew :mpich *features*)
+     (setf *mpi-implementation* :mpich))
     ;; mpich2
     ((boundp 'mpi-header::MPICH2)
-     (pushnew :mpich2 *features*))
+     (pushnew :mpich2 *features*)
+     (setf *mpi-implementation* :mpich2))
     )
   (pushnew :mpi *features*))
 

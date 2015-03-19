@@ -146,7 +146,7 @@ THE SOFTWARE.
 ;; twice in their respective wrapper functions and provide potential for
 ;; optimization
 
-(declaim (inline MPI_Send MPI_Recv))
+(declaim (inline MPI_Send))
 
 ;; blocking communication
 (defcfun ("MPI_Bsend" MPI_Bsend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
@@ -156,14 +156,14 @@ THE SOFTWARE.
 (defcfun ("MPI_Rsend" MPI_Rsend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm))
 (defcfun ("MPI_Buffer_attach" MPI_Buffer_attach) mpi-error-code (buf :pointer) (count :int))
 (defcfun ("MPI_Buffer_detach" MPI_Buffer_detach) mpi-error-code (buf :pointer) (count-ptr :pointer))
-(defcfun ("MPI_Get_count" MPI_Get_count) mpi-error-code (status :pointer) (datatype MPI_Datatype) (count :pointer))
+(defcfun ("MPI_Get_count" MPI_Get_count) mpi-error-code (status (:pointer (:struct MPI_Status))) (datatype MPI_Datatype) (count :pointer))
 
 (defcfun ("MPI_Sendrecv" MPI_Sendrecv) mpi-error-code
-  (send-buf :pointer)(send-count :int) (send-datatype MPI_Datatype)(dest :int) (send-tag :int)
-  (recv-buf :pointer)(recv-count :int) (recv-datatype MPI_Datatype)(source :int) (recv-tag :int)
-  (comm MPI_Comm)(status :pointer))
+  (send-buf :pointer) (send-count :int) (send-datatype MPI_Datatype) (dest :int) (send-tag :int)
+  (recv-buf :pointer) (recv-count :int) (recv-datatype MPI_Datatype) (source :int) (recv-tag :int)
+  (comm MPI_Comm) (status (:pointer (:struct MPI_Status))))
 
-(defcfun ("MPI_Probe" MPI_Probe) mpi-error-code (source :int)(tag :int)(communicator MPI_Comm)  (status :pointer))
+(defcfun ("MPI_Probe" MPI_Probe) mpi-error-code (source :int) (tag :int) (communicator MPI_Comm) (status (:pointer (:struct MPI_Status))))
 
 ;; non blocking communication
 
@@ -172,12 +172,12 @@ THE SOFTWARE.
 (defcfun ("MPI_Issend" MPI_Issend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm)(request :pointer))
 (defcfun ("MPI_Irsend" MPI_Irsend) mpi-error-code (buf :pointer) (count :int) (datatype MPI_Datatype) (dest :int) (tag :int) (comm MPI_Comm)(request :pointer))
 
-(defcfun ("MPI_Wait" MPI_Wait) mpi-error-code (request :pointer) (status :pointer))
+(defcfun ("MPI_Wait" MPI_Wait) mpi-error-code (request :pointer) (status (:pointer (:struct MPI_Status))))
 (defcfun ("MPI_Waitall" MPI_Waitall) mpi-error-code (count :int)(requests :pointer) (statuses :pointer))
-(defcfun ("MPI_Waitany" MPI_Waitany) mpi-error-code (count :int)(requests :pointer)(completed-index :pointer)(status :pointer))
+(defcfun ("MPI_Waitany" MPI_Waitany) mpi-error-code (count :int)(requests :pointer)(completed-index :pointer)(status (:pointer (:struct MPI_Status))))
 (defcfun ("MPI_Waitsome" MPI_Waitsome) mpi-error-code (count :int)(requests :pointer)(outcount :pointer)(completed-indices :pointer)(statuses :pointer))
 
-(defcfun ("MPI_Test" MPI_Test) mpi-error-code (request :pointer) (flag :pointer) (status :pointer))
+(defcfun ("MPI_Test" MPI_Test) mpi-error-code (request :pointer) (flag :pointer) (status (:pointer (:struct MPI_Status))))
 (defcfun ("MPI_Testall" MPI_Testall) mpi-error-code (count :int) (requests :pointer) (flag :pointer) (statuses :pointer))
 (defcfun ("MPI_Testany" MPI_Testany) mpi-error-code (count :int) (requests :pointer) (index :pointer)(flag :pointer) (statuses :pointer))
 (defcfun ("MPI_Testsome" MPI_Testsome) mpi-error-code (count :int)(requests :pointer)(outcount :pointer)(completed-indices :pointer)(statuses :pointer))

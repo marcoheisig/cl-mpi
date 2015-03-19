@@ -1,7 +1,7 @@
 (defpackage :mpi
   (:nicknames cl-mpi)
   (:documentation "CL-MPI: Common Lisp bindings for the Message Passing Interface MPI")
-  (:use cl cffi)
+  (:use :cl :cffi)
   (:export
    ;; constants and handles
    MPI_STATUS_IGNORE
@@ -65,6 +65,7 @@
    mpi-abort
    mpi-send-foreign
    mpi-receive-foreign
+   mpi-sendreceive-foreign
    mpi-send
    mpi-receive
    mpi-error-string
