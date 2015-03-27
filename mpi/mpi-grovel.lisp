@@ -1,3 +1,5 @@
+;;;; extract all MPI symbols from mpi.h
+
 (include "mpi.h")
 
 (in-package :mpi-header)
@@ -72,7 +74,7 @@
 
 (in-package :mpi)
 
-(cstruct MPI_Status "MPI_Status"
-         (MPI_SOURCE "MPI_SOURCE" :type :int)
-         (MPI_TAG "MPI_TAG" :type :int)
-         (MPI_ERROR "MPI_ERROR" :type :int))
+(cstruct mpi-status "MPI_Status"
+         (mpi-source "MPI_SOURCE" :type :int)
+         (mpi-tag "MPI_TAG" :type :int)
+         (mpi-error "MPI_ERROR" :type :int))

@@ -19,7 +19,7 @@
   "Checking whether it is possible to determine size and rank"
   (let ((size (mpi-comm-size))
         (rank (mpi-comm-rank)))
-    (is (> size 0) "Invalid size of MPI_COMM_WORLD")
+    (is (> size 0) "Invalid size of *mpi-comm-world*")
     (is (> size rank -1) "Invalid MPI rank")))
 
 (test (processor-name :depends-on mpi-init)
@@ -27,11 +27,15 @@
   current processor in use"
   (let ((processor-name (mpi-get-processor-name)))
     (is (stringp processor-name))
-    (is (< 0 (length processor-name)))))
+    (is (plusp (length processor-name)))))
+
+(test (mpi-barrier :depends-on mpi-init)
+  "synchronize all processes with multiple MPI barriers"
+  (loop for i from 0 below 10 do (mpi-barrier)))
 
 (test (serial-groups :depends-on mpi-init)
   "MPI group tests that can be run on a single process"
-  (let* ((all-procs (mpi-comm-group MPI_COMM_WORLD))
+  (let* ((all-procs (mpi-comm-group *mpi-comm-world*))
          (first-proc (mpi-group-select-from all-procs 0)))
     (is (< 0 (mpi-group-size all-procs)))
     (is (= 1 (mpi-group-size first-proc)))))
