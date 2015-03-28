@@ -8,13 +8,8 @@ Author: Marco Heisig <marco.heisig@fau.de>
 * Dependencies
   - cffi
   - cl-ppcre
-  - cl-conspack
-  - fast-io
-  - static-vectors
 
-* Future Plans
-  - High compatibility with all versions of the MPI standard
-  - MPI 3.0 features
+* Current TODO
 
 * Testing
 

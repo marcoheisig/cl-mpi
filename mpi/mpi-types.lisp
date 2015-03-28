@@ -44,6 +44,9 @@ THE SOFTWARE.
 (define-mpi-type mpi-group)
 (define-mpi-type mpi-datatype)
 (define-mpi-type mpi-op)
+(define-mpi-type mpi-info)
+(define-mpi-type mpi-message)
+(define-mpi-type mpi-request)
 
 (defclass mpi-object ()
   ((name :type string
@@ -62,6 +65,24 @@ THE SOFTWARE.
 (defclass mpi-group (mpi-object) ())
 (defclass mpi-datatype (mpi-object) ())
 (defclass mpi-op (mpi-object) ())
+(defclass mpi-info (mpi-object) ())
+(defclass mpi-message (mpi-object) ())
+(defclass mpi-request (mpi-object) ())
+
+(defmacro define-mpi-object-expander (type foreign-type)
+  `(defmethod expand-to-foreign (value (type ,foreign-type))
+     `(progn
+        (check-type ,value ,',type)
+        (mpi-object-handle ,value))))
+
+(define-mpi-object-expander mpi-errhandler mpi-errhandler-type)
+(define-mpi-object-expander mpi-comm mpi-comm-type)
+(define-mpi-object-expander mpi-group mpi-group-type)
+(define-mpi-object-expander mpi-datatype mpi-datatype-type)
+(define-mpi-object-expander mpi-op mpi-op-type)
+(define-mpi-object-expander mpi-info mpi-info-type)
+(define-mpi-object-expander mpi-message mpi-message-type)
+(define-mpi-object-expander mpi-request mpi-request-type)
 
 ;;; if mpi-object-handle is not given it is derived from the given name. An
 ;;; error is signalled if such a symbol is not found
@@ -85,9 +106,6 @@ THE SOFTWARE.
           (let ((symbol-name
                   (concatenate 'string "MPI_" (name object)))))
           (symbol-value (find-symbol symbol-name :mpi-header)))))
-
-(defmethod translate-to-foreign ((value mpi-object) (type mpi-object-type))
-  (mpi-object-handle value))
 
 (define-foreign-type mpi-error-type ()
   ()

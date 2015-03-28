@@ -35,10 +35,10 @@
 
 (test (serial-groups :depends-on mpi-init)
   "MPI group tests that can be run on a single process"
-  (let* ((all-procs (mpi-comm-group *mpi-comm-world*))
-         (first-proc (mpi-group-select-from all-procs 0)))
+  (let* ((all-procs (mpi-comm-group *mpi-comm-world*)))
     (is (< 0 (mpi-group-size all-procs)))
-    (is (= 1 (mpi-group-size first-proc)))))
+    ;; (is (= 1 (mpi-group-size first-proc)))
+    ))
 
 (test (parallel :depends-on size-and-rank)
   "Is there more than one MPI process"

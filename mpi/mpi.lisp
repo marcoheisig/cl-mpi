@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 (in-package :mpi)
 
+;; TODO make this work for pointers to arrays
 (defmacro pointer-ref ((name cffi-type) &body body)
   "Allocate a foreign value of type CFFI-TYPE and bind it to NAME. Then
 evaluate BODY and return the value of the foreign value."
@@ -53,11 +54,6 @@ before any other MPI routine (apart from MPI-INITIALIZED) is called."
    is the only routine that may be called before MPI-INIT is called."
   (not (zerop (pointer-ref (flag :int)
                 (%mpi-initialized flag)))))
-
-;;; after careful consideration I considered it is the right thing to call
-;;; MPI-INIT as soon as cl-mpi is loaded. Otherwise all MPI calls exhibit
-;;; unspecified behaviour.
-(eval-when (:load-toplevel) (mpi-init))
 
 (defun mpi-abort(&key (comm *mpi-comm-world*) (errcode -1))
   "This routine makes a 'best attempt' to abort all tasks in the group of
@@ -198,21 +194,20 @@ OBJECT is ignored in all other processes."
 
 (defun mpi-group-rank (group)
   (pointer-ref (rank :int)
-    (MPI-Group-rank group rank)))
+    (%mpi-group-rank group rank)))
 
-;; (defmpifun "MPI-Group-union" (group1 MPI-Group) (group2 MPI-Group) (newgroup :pointer))
-;; (defun mpi-group-union (group1 group2)
-;;     (with-foreign-object (newgroup 'MPI-Group)
-;;     (MPI-Group-union group1 group2 newgroup)
-;;     (mem-ref newgroup 'MPI-Group)))
+(defun mpi-group-union (group1 group2)
+    (pointer-ref (newgroup 'mpi-group)
+      (%mpi-group-union group1 group2 newgroup)))
 
-;; (defmpifun "MPI-Group-intersection" (group1 MPI-Group) (group2 MPI-Group) (newgroup :pointer))
-;; ;; TODO
+(defun mpi-group-intersection (group1 group2)
+  (pointer-ref (newgroup 'mpi-group)
+    (%mpi-group-intersection group1 group2 newgroup)))
 
-;; (defmpifun "MPI-Group-difference" (group1 :pointer) (group2 :pointer) (newgroup :pointer))
-;; ;; TODO
+(defun mpi-group-difference (group1 group2)
+  (pointer-ref (newgroup 'mpi-group)
+    (%mpi-group-difference group1 group2 newgroup)))
 
-;; (defmpifun "MPI-Group-range-incl" (group MPI-Group) (n :int) (ranges :pointer) (newgroup :pointer))
 ;; (defun mpi-group-select-from (group &rest ranges)
 ;;   "Create a new MPI group consisting of a subset of the ranks of the original
 ;;  group. A valid range can be
@@ -239,18 +234,18 @@ OBJECT is ignored in all other processes."
 
 ;; (defmpifun "MPI-Group-excl" (group :pointer) (n :int) (ranks :pointer) (newgroup :pointer))
 ;; (defmpifun "MPI-Group-free" (group mpi-group))
-;; (defun mpi-group-free (group) (MPI-Group-free group))
+;;(defun mpi-group-free (group) (MPI-Group-free group))
 
 (defun mpi-comm-size (&optional (comm *mpi-comm-world*))
   "Indicates the number of processes involved in a communicator. For
 *mpi-comm-world*, it indicates the total number of processes available."
   (pointer-ref (size :int)
-    (%mpi-comm-size comm size-mem)))
+    (%mpi-comm-size comm size)))
 
 (defun mpi-comm-rank (&optional (comm *mpi-comm-world*))
   "Returns the rank of the process in a given communicator."
   (pointer-ref (rank :int)
-    (%mpi-comm-rank comm rank-mem)))
+    (%mpi-comm-rank comm rank)))
 
 (defun mpi-comm-create (group &key (comm *mpi-comm-world*))
   (make-instance
@@ -258,3 +253,9 @@ OBJECT is ignored in all other processes."
    :mpi-object-handle
    (pointer-ref (newcomm 'mpi-comm)
     (%mpi-comm-create comm group newcomm))))
+
+
+;;; after careful consideration I decided it is the right thing to call
+;;; MPI-INIT as soon as cl-mpi is loaded. Otherwise all MPI calls exhibit
+;;; unspecified behaviour.
+(eval-when (:load-toplevel :execute) (mpi-init))
