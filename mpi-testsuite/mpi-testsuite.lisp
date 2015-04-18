@@ -1,38 +1,11 @@
 (defpackage :mpi-testsuite
-  (:use :cl :mpi :5am :uiop :cffi))
+  (:use :cl :mpi :5am :uiop :cffi :static-vectors))
 
 (in-package :mpi-testsuite)
 
 (def-suite mpi-testsuite :description "All MPI related tests.")
 
 (in-suite mpi-testsuite)
-
-#+sbcl
-(test (foreign-copy)
-  "Test whether my assumptions about the memory layout of simple-arrays are
-  true."
-  (let ((src (make-array 2 :element-type '(unsigned-byte 64)
-                           :initial-element #xff))
-        (dst (make-array 2 :element-type '(unsigned-byte 64)
-                           :initial-element #x11)))
-    (sb-sys:with-pinned-objects (src dst)
-      (let ((s (sb-sys:vector-sap src))
-            (d (sb-sys:vector-sap dst)))
-        (loop for i from 0 below 16 do
-          (setf (mem-aref d :uint8 i) (mem-aref s :uint8 i)))
-        (is (equalp src dst))
-        (fill dst #x11)
-        (loop for i from 0 below 8 do
-          (setf (mem-aref d :uint16 i) (mem-aref s :uint16 i)))
-        (is (equalp src dst))
-        (fill dst #x11)
-        (loop for i from 0 below 4 do
-          (setf (mem-aref d :uint32 i) (mem-aref s :uint32 i)))
-        (is (equalp src dst))
-        (fill dst #x11)
-        (loop for i from 0 below 2 do
-          (setf (mem-aref d :uint64 i) (mem-aref s :uint64 i)))
-        (is (equalp src dst))))))
 
 (test (mpi-init)
   "MPI Initialization"
@@ -97,16 +70,21 @@
   "Send a Common Lisp datastructure through all nodes"
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size))
-        (buffer (make-string 7 :initial-element #\!)))
+        (buffer (make-static-vector 7 :element-type 'character
+                                      :initial-element #\!))
+        (message (make-static-vector 6 :element-type 'character
+                                       :initial-contents "foobar")))
     (let ((left-neighbor  (mod (- rank 1) size))
           (right-neighbor (mod (+ rank 1) size)))
       (cond ((= 0 rank)
-             (mpi-send "foobar" right-neighbor)
+             (mpi-send message right-neighbor)
              (mpi-receive buffer left-neighbor)
              (is (string= "foobar!" buffer)))
             (t
              (mpi-receive buffer left-neighbor)
-             (mpi-send buffer right-neighbor))))))
+             (mpi-send buffer right-neighbor))))
+    (free-static-vector buffer)
+    (free-static-vector message)))
 
 (test (mpi-sendreceive :depends-on parallel)
   "Send a Common Lisp datastructure through all nodes"
@@ -114,13 +92,16 @@
         (size (mpi-comm-size)))
     (let ((left-neighbor  (mod (- rank 1) size))
           (right-neighbor (mod (+ rank 1) size))
-          (left-buffer  (make-array 1 :element-type '(unsigned-byte 64)
-                                      :initial-element 0))
-          (right-buffer (make-array 1 :element-type '(unsigned-byte 64)
-                                      :initial-element 0))
-          (my-buffer    (make-array 1 :element-type '(unsigned-byte 64)
-                                      :initial-element rank)))
+          (left-buffer  (make-static-vector 1 :element-type '(unsigned-byte 64)
+                                              :initial-element 0))
+          (right-buffer (make-static-vector 1 :element-type '(unsigned-byte 64)
+                                              :initial-element 0))
+          (my-buffer    (make-static-vector 1 :element-type '(unsigned-byte 64)
+                                              :initial-element rank)))
       (mpi-sendreceive my-buffer right-neighbor left-buffer left-neighbor)
       (mpi-sendreceive my-buffer left-neighbor right-buffer right-neighbor)
       (is (= (aref left-buffer 0) left-neighbor))
-      (is (= (aref right-buffer 0) right-neighbor)))))
+      (is (= (aref right-buffer 0) right-neighbor))
+      (free-static-vector left-buffer)
+      (free-static-vector right-buffer)
+      (free-static-vector my-buffer))))

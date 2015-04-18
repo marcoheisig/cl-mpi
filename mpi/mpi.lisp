@@ -63,16 +63,14 @@ THE SOFTWARE.
     ((eq mpi-type +mpi-double+) :double)))
 
 
-(defun simple-array-data (array)
+(defun static-vector-mpi-data (vector)
   "Return a pointer to the raw memory of the given array, as well as the
 corresponding mpi-type and length. This is highly implementation dependent.
 
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
-  (declare (type simple-array object))
-  #+sbcl
-  (let* ((vector (sb-ext:array-storage-vector array))
-         (mpi-type
+  (declare (type (simple-array * (*)) vector))
+  (let* ((mpi-type
            (etypecase vector
              ((simple-array single-float (*)) +mpi-float+)
              ((simple-array double-float (*)) +mpi-double+)
@@ -80,17 +78,16 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
              ((simple-array (unsigned-byte 8) (*)) +mpi-uint8-t+)
              ((simple-array (signed-byte 16) (*)) +mpi-int16-t+)
              ((simple-array (unsigned-byte 16) (*)) +mpi-uint16-t+)
-             ((simple-array character (*)) #+sb-unicode +mpi-uint32-t+
-                                           #-sb-unicode +mpi-uint8-t+)
              ((simple-array (signed-byte 32) (*)) +mpi-int32-t+)
              ((simple-array (unsigned-byte 32) (*)) +mpi-uint32-t+)
              ((simple-array (signed-byte 64) (*)) +mpi-int64-t+)
-             ((simple-array (unsigned-byte 64) (*)) +mpi-uint64-t+)))
+             ((simple-array (unsigned-byte 64) (*)) +mpi-uint64-t+)
+             ((simple-array character (*))
+              #+sb-unicode +mpi-uint32-t+ ;; TODO sbcl-specific
+              #-sb-unicode +mpi-uint8-t+)))
          (count (length vector))
-         (pointer (sb-sys:vector-sap vector)))
-    (values pointer mpi-type count))
-  #-sbcl
-  (error "currently there is no support for this lisp, sorry"))
+         (pointer (static-vectors:static-vector-pointer vector)))
+    (values pointer mpi-type count)))
 
 (defmacro with-foreign-results (bindings &body body)
   "Evaluate body as with WITH-FOREIGN-OBJECTS, but afterwards convert them to
@@ -181,9 +178,9 @@ system)."
                  dest send-tag source  recv-tag))
   (with-pinned-arrays (out in)
     (multiple-value-bind (send-buf send-type send-count)
-        (simple-array-data out)
+        (static-vector-mpi-data out)
       (multiple-value-bind (recv-buf recv-type recv-count)
-        (simple-array-data in)
+        (static-vector-mpi-data in)
         (%mpi-sendrecv
          send-buf send-count send-type dest send-tag
          recv-buf recv-count recv-type source recv-tag
@@ -209,7 +206,7 @@ sender and receiver side do not match."
             (:ready #'%mpi-rsend))))
     (with-pinned-arrays (array)
       (multiple-value-bind (ptr type count)
-          (simple-array-data array)
+          (static-vector-mpi-data array)
         (funcall send-function ptr count type dest tag comm)))))
 
 (defun mpi-isend (array dest &key
@@ -235,7 +232,7 @@ mechanism such as sb-sys:with-pinned-objects."
             (:synchronous #'%mpi-issend)
             (:ready #'%mpi-irsend))))
     (multiple-value-bind (ptr type count)
-        (simple-array-data array)
+        (static-vector-mpi-data array)
       (with-foreign-results ((request 'mpi-request))
         (funcall send-function ptr count type dest tag comm request)))))
 
@@ -247,7 +244,7 @@ mechanism such as sb-sys:with-pinned-objects."
            (type mpi-comm comm))
   (with-pinned-arrays (array)
     (multiple-value-bind (ptr type count)
-        (simple-array-data array) ;; TODO check the mpi-status
+        (static-vector-mpi-data array) ;; TODO check the mpi-status
       (%mpi-recv ptr count type source tag comm +mpi-status-ignore+))))
 
 (defun mpi-comm-group (&optional (comm *standard-communicator*))

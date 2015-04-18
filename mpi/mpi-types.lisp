@@ -107,8 +107,8 @@ THE SOFTWARE.
     #-openmpi
     (setf (slot-value object 'foreign-object)
           (let ((symbol-name
-                  (concatenate 'string "MPI_" (name object)))))
-          (symbol-value (find-symbol symbol-name :mpi-header)))))
+                  (concatenate 'string "MPI_" (name object))))
+            (symbol-value (find-symbol symbol-name :mpi-header))))))
 
 (define-foreign-type mpi-error-type ()
   ()

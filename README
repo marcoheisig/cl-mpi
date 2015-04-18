@@ -1,22 +1,26 @@
+cl-mpi provides CFFI bindings for the Message Passing Interface (MPI). MPI is
+typically used in High Performance Computing to utilize big parallel computers
+with thousands of cores. It features minimal communication overhead with a
+latency in the range of microseconds.
 
-* Changes from 0.1.0 to 0.9.0
-  - openmpi support out of the box
-  - MPI errors are reported via Common Lisp conditions
-  - improved testsuite
-  - MPI operations operate very efficiently on simple-arrays (including
-    strings!)
-  - added a benchmark suite
+If you have any questions or suggestions, feel free to contact me.
 
-* Current TODO
-** parallel IO
+* Usage
+  An MPI program must be launched with "mpirun" or "mpiexec". These commands
+  spawn multiple processes depending on your system and commandline
+  parameters. Each process is identical, except that it has a unique rank that
+  can be queried with (MPI-COMM-RANK). The ranks are assigned from 0 to
+  (- (MPI-COMM-SIZE) 1).
+
+  A wide range of communication functions is avilable to transmit messages
+  between different ranks.
 
 * Testing
-
+  To run the testsuite:
   mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi)" --eval "(mpi:mpi-finalize)"
 
-  mpirun -np 2 sbcl --noinform --quit --disable-debugger --eval "(asdf:test-system :cl-mpi-benchmarks)" --eval "(mpi:mpi-finalize)"
-
-  mpirun -np 2 sbcl --noinform --quit --disable-debugger --load ~/userdata/proj/cl-mpi/mpi-benchmarks/run.lisp --eval "(mpi:mpi-finalize)"
+  To run the benchmarks
+  mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi-benchmarks)" --eval "(mpi:mpi-finalize)"
 
 * Authors
   Alex Fukunaga
@@ -27,3 +31,21 @@
   Network for Technical and Scientific High Performance Computing).
 
   Another big thanks to Nicolas Neuss for all the useful suggestions.
+
+* TODOs
+  - parallel IO
+  - one-sided MPI 3.0 communications
+  - full MPI benchmark suite
+  - MPI extensions
+  - collective operations
+  - extensive testing
+  - convenient communication layers on top of MPI
+
+* Changes from 0.1.0 to 0.5.0
+  - Openmpi support out of the box
+  - MPI errors are reported via Common Lisp conditions
+  - improved testsuite
+  - MPI operations operate very efficiently on static-vectors (including
+    strings!)
+  - added a benchmark suite
+

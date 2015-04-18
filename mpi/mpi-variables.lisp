@@ -91,7 +91,7 @@ THE SOFTWARE.
 (define-mpi-object mpi-datatype MPI_UINT32_T)
 (define-mpi-object mpi-datatype MPI_UINT64_T)
 (define-mpi-object mpi-datatype MPI_PACKED)
-(define-mpi-object mpi-op MPI_NULL)
+#+openmpi (define-mpi-object mpi-op MPI_NULL)
 (define-mpi-object mpi-op MPI_MIN)
 (define-mpi-object mpi-op MPI_MAX)
 (define-mpi-object mpi-op MPI_SUM)
@@ -105,7 +105,7 @@ THE SOFTWARE.
 (define-mpi-object mpi-op MPI_MAXLOC)
 (define-mpi-object mpi-op MPI_MINLOC)
 (define-mpi-object mpi-op MPI_REPLACE)
-(define-mpi-object mpi-op MPI_NO_OP)
+#+openmpi (define-mpi-object mpi-op MPI_NO_OP)
 
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)

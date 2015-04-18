@@ -11,7 +11,7 @@
 (asdf:defsystem :cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
   :author "Marco Heisig <marco.heisig@fau.de>"
-  :version "0.2.0"
+  :version "0.5"
   :license "MIT"
   :depends-on (:alexandria :cffi :cl-ppcre :static-vectors :cl-conspack)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
