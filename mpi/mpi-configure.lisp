@@ -38,8 +38,7 @@
   (cond
     ;; openmpi
     ((or (boundp 'mpi-header::OPEN_MPI)
-         (boundp 'mpi-header::OMPI_MAJOR_VERSION)
-         (foreign-symbol-pointer "ompi_mpi_comm_world"))
+         (boundp 'mpi-header::OMPI_MAJOR_VERSION))
      (pushnew :openmpi *features*)
      (setf *mpi-implementation* :openmpi))
     ;; mpich

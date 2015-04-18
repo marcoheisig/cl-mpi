@@ -1,6 +1,6 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI variables
+MPI variables, actually mostly constants
 
 Copyright (C) 2015  Marco Heisig <marco.heisig@fau.de>
 
@@ -36,17 +36,24 @@ THE SOFTWARE.
 (defconstant +mpi-max-processor-name+ mpi-header::MPI_MAX_PROCESSOR_NAME)
 (defconstant +mpi-any-tag+ mpi-header::MPI_ANY_TAG)
 (defconstant +mpi-any-source+ mpi-header::MPI_ANY_SOURCE)
+(defconstant +mpi-proc-null+ mpi-header::MPI_PROC_NULL)
+(defconstant +mpi-root+ mpi-header::MPI_ROOT)
+(defconstant +mpi-undefined+ mpi-header::MPI_UNDEFINED)
 
-(defvar *mpi-status-ignore* (make-pointer mpi-header::MPI_STATUS_IGNORE))
+(defconstant +mpi-status-ignore+
+  (if (boundp '+mpi-status-ignore+)
+      (symbol-value '+mpi-status-ignore+)
+      (make-pointer mpi-header::MPI_STATUS_IGNORE)))
 
 (defmacro define-mpi-object (type mpi-name)
-  (let ((basename (subseq (symbol-name mpi-name) 4))
-        (lispname (translate-name-from-foreign
-                   (symbol-name mpi-name)
-                   (find-package :mpi-header) t)))
-    `(progn
-       (declaim (type ,type ,lispname))
-       (defvar ,lispname (make-instance ',type :name ,basename)))))
+  (let ((basename (subseq (symbol-name mpi-name) 4)) ; drop the MPI_ prefix
+        (lispname (intern
+                   (format nil "+~A+" (substitute #\- #\_ (symbol-name mpi-name)))
+                   :mpi)))
+    `(defconstant ,lispname
+       (if (boundp ',lispname)
+           (symbol-value ',lispname)
+           (make-instance ',type :name ,basename)))))
 
 (define-mpi-object mpi-errhandler MPI_ERRORS_RETURN)
 (define-mpi-object mpi-errhandler MPI_ERRORS_ARE_FATAL)
@@ -100,21 +107,5 @@ THE SOFTWARE.
 (define-mpi-object mpi-op MPI_REPLACE)
 (define-mpi-object mpi-op MPI_NO_OP)
 
-(declaim (inline cffi-type-to-mpi-type))
-(defun cffi-type-to-mpi-type (cffi-type)
-  "Convert :int to MPI_INT and so on"
-  (declare (type keyword cffi-type))
-  (ecase cffi-type
-    ((:char) *mpi-char*)
-    ((:uchar :unsigned-char) *mpi-unsigned-char*)
-    ((:short) *mpi-short*)
-    ((:ushort :unsigned-short) *mpi-unsigned-short*)
-    ((:int) *mpi-int*)
-    ((:uint :unsigned-int) *mpi-unsigned*)
-    ((:long) *mpi-long*)
-    ((:ulong :unsigned-long) *mpi-unsigned-long*)
-    ((:llong :long-long) *mpi-long-long-int*)
-    ((:ullong :unsigned-long-long) *mpi-unsigned-long-long*)
-    ((:float) *mpi-float*)
-    ((:double) *mpi-double*)
-    ((:long-double) *mpi-long-double*)))
+(declaim (type mpi-comm *standard-communicator*))
+(defvar *standard-communicator* +mpi-comm-world+)

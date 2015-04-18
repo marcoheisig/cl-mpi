@@ -66,8 +66,12 @@
 (constant (MPI_MINLOC "MPI_MINLOC"))
 (constant (MPI_REPLACE "MPI_REPLACE"))
 (constant (MPI_NO_OP "MPI_NO_OP") :optional t)
-(constant (MPI_ANY_TAG "MPI_ANY_TAG"))
 (constant (MPI_ANY_SOURCE "MPI_ANY_SOURCE"))
+(constant (MPI_PROC_NULL "MPI_PROC_NULL"))
+(constant (MPI_ROOT "MPI_ROOT"))
+(constant (MPI_ANY_TAG "MPI_ANY_TAG"))
+(constant (MPI_UNDEFINED "MPI_UNDEFINED"))
+
 (constant (MPI_MAX_PROCESSOR_NAME "MPI_MAX_PROCESSOR_NAME"))
 (constant (MPI_MAX_ERROR_STRING "MPI_MAX_ERROR_STRING"))
 (constant (MPI_STATUS_IGNORE "MPI_STATUS_IGNORE"))

@@ -6,4 +6,5 @@
   :components
   ((:module "mpi-benchmarks"
             :components
-            ((:file "mpi-benchmarks")))))
+            ((:file "mpi-benchmarks")
+             (:file "mpi-pingpong")))))

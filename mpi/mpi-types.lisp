@@ -53,27 +53,31 @@ THE SOFTWARE.
          :reader name
          :initarg :name
          :initform "")
-   (mpi-object-handle
-    :reader mpi-object-handle
-    :initarg :mpi-object-handle
+   (foreign-object
+    :reader foreign-object
+    :initarg :foreign-object
     :type
     #+openmpi foreign-pointer
     #-openmpi (unsigned-byte 32))))
 
 (defclass mpi-errhandler (mpi-object) ())
-(defclass mpi-comm (mpi-object) ())
+
+(defclass mpi-comm (mpi-object)
+  ((mpi-protocol
+    :accessor mpi-protocol
+    :initarg :mpi-protocol)))
+
 (defclass mpi-group (mpi-object) ())
 (defclass mpi-datatype (mpi-object) ())
 (defclass mpi-op (mpi-object) ())
 (defclass mpi-info (mpi-object) ())
-(defclass mpi-message (mpi-object) ())
 (defclass mpi-request (mpi-object) ())
 
 (defmacro define-mpi-object-expander (type foreign-type)
   `(defmethod expand-to-foreign (value (type ,foreign-type))
      `(progn
         (check-type ,value ,',type)
-        (mpi-object-handle ,value))))
+        (foreign-object ,value))))
 
 (define-mpi-object-expander mpi-errhandler mpi-errhandler-type)
 (define-mpi-object-expander mpi-comm mpi-comm-type)
@@ -81,14 +85,13 @@ THE SOFTWARE.
 (define-mpi-object-expander mpi-datatype mpi-datatype-type)
 (define-mpi-object-expander mpi-op mpi-op-type)
 (define-mpi-object-expander mpi-info mpi-info-type)
-(define-mpi-object-expander mpi-message mpi-message-type)
 (define-mpi-object-expander mpi-request mpi-request-type)
 
-;;; if mpi-object-handle is not given it is derived from the given name. An
+;;; if foreign-object is not given it is derived from the given name. An
 ;;; error is signalled if such a symbol is not found
 (defmethod initialize-instance :after ((object mpi-object) &rest args)
   (declare (ignore args))
-  (unless (slot-boundp object 'mpi-object-handle)
+  (unless (slot-boundp object 'foreign-object)
     #+openmpi
     (let* ((openmpi-name
              (concatenate
@@ -99,10 +102,10 @@ THE SOFTWARE.
               (string-downcase (name object))))
            (handle (foreign-symbol-pointer openmpi-name)))
       (if handle
-          (setf (slot-value object 'mpi-object-handle) handle)
+          (setf (slot-value object 'foreign-object) handle)
           (error "MPI symbol ~A could not be found" openmpi-name)))
     #-openmpi
-    (setf (slot-value object 'mpi-object-handle)
+    (setf (slot-value object 'foreign-object)
           (let ((symbol-name
                   (concatenate 'string "MPI_" (name object)))))
           (symbol-value (find-symbol symbol-name :mpi-header)))))

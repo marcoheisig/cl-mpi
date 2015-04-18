@@ -26,14 +26,94 @@ THE SOFTWARE.
 
 (in-package :mpi)
 
-;; TODO make this work for pointers to arrays
-(defmacro pointer-ref ((name cffi-type) &body body)
-  "Allocate a foreign value of type CFFI-TYPE and bind it to NAME. Then
-evaluate BODY and return the value of the foreign value."
-  (check-type name symbol)
-  `(with-foreign-object (,name ,cffi-type)
-     ,@body
-     (mem-ref ,name ,cffi-type)))
+;;; helper functions
+
+(defun cffi-type-to-mpi-type (cffi-type)
+  "Convert :int to MPI_INT and so on"
+  (declare (type keyword cffi-type))
+  (ecase cffi-type
+    ((:char) +mpi-char+)
+    ((:uchar :unsigned-char) +mpi-unsigned-char+)
+    ((:short) +mpi-short+)
+    ((:ushort :unsigned-short) +mpi-unsigned-short+)
+    ((:int) +mpi-int+)
+    ((:uint :unsigned-int) +mpi-unsigned+)
+    ((:long) +mpi-long+)
+    ((:ulong :unsigned-long) +mpi-unsigned-long+)
+    ((:llong :long-long) +mpi-long-long-int+)
+    ((:ullong :unsigned-long-long) +mpi-unsigned-long-long+)
+    ((:float) +mpi-float+)
+    ((:double) +mpi-double+)))
+
+(defun mpi-type-to-cffi-type (mpi-type)
+  "Convert MPI_INT to :int and so on"
+  (declare (type mpi-datatype mpi-type))
+  (cond
+    ((eq mpi-type +mpi-char+) :char)
+    ((eq mpi-type +mpi-unsigned-char+) :unsigned-char)
+    ((eq mpi-type +mpi-short+) :short)
+    ((eq mpi-type +mpi-unsigned-short+) :unsigned-short)
+    ((eq mpi-type +mpi-int+) :int)
+    ((eq mpi-type +mpi-unsigned+) :unsigned-int)
+    ((eq mpi-type +mpi-long+) :long)
+    ((eq mpi-type +mpi-unsigned-long+) :unsigned-long)
+    ((eq mpi-type +mpi-long-long-int+) :long-long)
+    ((eq mpi-type +mpi-unsigned-long-long+) :unsigned-long-long)
+    ((eq mpi-type +mpi-float+) :float)
+    ((eq mpi-type +mpi-double+) :double)))
+
+
+(defun simple-array-data (array)
+  "Return a pointer to the raw memory of the given array, as well as the
+corresponding mpi-type and length. This is highly implementation dependent.
+
+WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
+your code is broken. So better have a look at the STATIC-VECTORS package."
+  (declare (type simple-array object))
+  #+sbcl
+  (let* ((vector (sb-ext:array-storage-vector array))
+         (mpi-type
+           (etypecase vector
+             ((simple-array single-float (*)) +mpi-float+)
+             ((simple-array double-float (*)) +mpi-double+)
+             ((simple-array (signed-byte 8) (*)) +mpi-int8-t+)
+             ((simple-array (unsigned-byte 8) (*)) +mpi-uint8-t+)
+             ((simple-array (signed-byte 16) (*)) +mpi-int16-t+)
+             ((simple-array (unsigned-byte 16) (*)) +mpi-uint16-t+)
+             ((simple-array character (*)) #+sb-unicode +mpi-uint32-t+
+                                           #-sb-unicode +mpi-uint8-t+)
+             ((simple-array (signed-byte 32) (*)) +mpi-int32-t+)
+             ((simple-array (unsigned-byte 32) (*)) +mpi-uint32-t+)
+             ((simple-array (signed-byte 64) (*)) +mpi-int64-t+)
+             ((simple-array (unsigned-byte 64) (*)) +mpi-uint64-t+)))
+         (count (length vector))
+         (pointer (sb-sys:vector-sap vector)))
+    (values pointer mpi-type count))
+  #-sbcl
+  (error "currently there is no support for this lisp, sorry"))
+
+(defmacro with-foreign-results (bindings &body body)
+  "Evaluate body as with WITH-FOREIGN-OBJECTS, but afterwards convert them to
+  lisp objects and return them via VALUES."
+   ;; TOOD bindings are currently evaluated multiple times
+  (let ((results
+          (loop for binding in bindings
+                collect
+                (if (cddr binding)
+                    `(mem-ref ,(car binding) (:array ,(cadr binding) ,(caddr binding)))
+                    `(mem-ref ,@binding)))))
+    `(with-foreign-objects ,bindings
+       ,@body
+       (values ,@results))))
+
+(defmacro with-pinned-arrays ((&rest objects) &body body)
+  "Ensure or assert that the given arrays will not be moved during the execution
+of BODY."
+  #+sbcl
+  `(sb-sys:with-pinned-objects ,objects
+     ,@body)
+  #-sbcl
+  `,body)
 
 (defun mpi-init ()
   "This routine must be called before any other MPI routine. It must be called
@@ -46,16 +126,16 @@ before any other MPI routine (apart from MPI-INITIALIZED) is called."
     ;; by default MPI reacts to each failure by crashing the process. This is
     ;; not the Lisp way of doing things. The following call makes error
     ;; non-fatal in most cases.
-    (%mpi-comm-set-errhandler *mpi-comm-world* *mpi-errors-return*)))
+    (%mpi-comm-set-errhandler +mpi-comm-world+ +mpi-errors-return+)))
 
 (defun mpi-initialized ()
   "Returns true if MPI_INIT has been called and nil otherwise.
    This routine may be used to determine whether MPI-INIT has been called. It
    is the only routine that may be called before MPI-INIT is called."
-  (not (zerop (pointer-ref (flag :int)
-                (%mpi-initialized flag)))))
+  (with-foreign-results ((flag :boolean))
+    (%mpi-initialized flag)))
 
-(defun mpi-abort(&key (comm *mpi-comm-world*) (errcode -1))
+(defun mpi-abort(&key (comm *standard-communicator*) (errcode -1))
   "This routine makes a 'best attempt' to abort all tasks in the group of
 comm. This function does not require that the invoking environment take any
 action with the error code. However, a Unix or POSIX environment should handle
@@ -85,127 +165,116 @@ system)."
                error-string
                :count (mem-aref strlen :int))))))
 
-(defun mpi-barrier (&optional (comm *mpi-comm-world*))
+(defun mpi-barrier (&optional (comm *standard-communicator*))
   "MPI-BARRIER blocks the caller until all group members have called it. The
   call returns at any process only after all group members have entered the
   call."
   (%mpi-barrier comm))
 
-(defun mpi-send-foreign (dest foreign-pointer count cffi-type
-                         &key (tag 0) (comm *mpi-comm-world*))
-  "Send data to the MPI process specified by the integers DEST and
-  TAG. FOREIGN-POINTER must point to a foreign-array with SIZE elements of
-  type CFFI-TYPE."
-  (declare (type (signed-byte 32) dest count tag)
-           (type keyword cffi-type))
-  (%mpi-send foreign-pointer count (cffi-type-to-mpi-type cffi-type) dest tag comm))
+(defun mpi-sendreceive (out dest in source
+                        &key
+                          (send-tag 0)
+                          (recv-tag +mpi-any-tag+)
+                          (comm *standard-communicator*))
+  (declare (type simple-array out in)
+           (type (signed-byte 32)
+                 dest send-tag source  recv-tag))
+  (with-pinned-arrays (out in)
+    (multiple-value-bind (send-buf send-type send-count)
+        (simple-array-data out)
+      (multiple-value-bind (recv-buf recv-type recv-count)
+        (simple-array-data in)
+        (%mpi-sendrecv
+         send-buf send-count send-type dest send-tag
+         recv-buf recv-count recv-type source recv-tag
+         comm +mpi-status-ignore+)))))
 
-(defun mpi-receive-foreign (source foreign-pointer count cffi-type
-                            &key (tag +mpi-any-tag+) (comm *mpi-comm-world*))
-  "Receive data from the MPI process specified by the integers SOURCE and
-  TAG. FOREIGN-POINTER must point to a foreign-array with COUNT elements of
-  type CFFI-TYPE."
-  (declare (type (signed-byte 32) source count tag)
-           (type keyword cffi-type))
-  (with-foreign-object (mpi-status '(:struct mpi-status))
-    (%mpi-recv foreign-pointer count (cffi-type-to-mpi-type cffi-type) source tag comm mpi-status)
-    (with-foreign-slots ((mpi-source mpi-tag mpi-error) mpi-status (:struct mpi-status))
-      (unless (zerop mpi-error) (signal-mpi-error mpi-error))
-      (values mpi-source mpi-tag))))
+(defun mpi-send (array dest &key
+                              (tag 0)
+                              (comm *standard-communicator*)
+                              (mode :basic))
+  "Send a given ARRAY to a corresponding MPI-RECEIVE. The arrays passed to
+MPI-SEND and MPI-RECEIVE must be of type SIMPLE-ARRAY and have the same
+element-type and dimensions. Undefined behaviour occurs if the arrays at
+sender and receiver side do not match."
+  (declare (type simple-array array)
+           (type (signed-byte 32) dest tag)
+           (type mpi-comm comm)
+           (type (member :basic :buffered :synchronous :ready) mode))
+  (let ((send-function
+          (ecase mode
+            (:basic #'%mpi-send)
+            (:buffered #'%mpi-bsend)
+            (:synchronous #'%mpi-ssend)
+            (:ready #'%mpi-rsend))))
+    (with-pinned-arrays (array)
+      (multiple-value-bind (ptr type count)
+          (simple-array-data array)
+        (funcall send-function ptr count type dest tag comm)))))
 
-(defun mpi-sendreceive-foreign
-    (dest   send-buf send-count send-type
-     source recv-buf recv-count recv-type
-     &key (send-tag 0) (recv-tag +mpi-any-tag+) (comm *mpi-comm-world*))
-  (declare (type (signed-byte 32)
-                 dest send-count send-tag
-                 source recv-count recv-tag))
-  (%mpi-sendrecv
-   send-buf send-count (cffi-type-to-mpi-type send-type) dest send-tag
-   recv-buf recv-count (cffi-type-to-mpi-type recv-type) source recv-tag
-   comm *mpi-status-ignore*))
+(defun mpi-isend (array dest &key
+                               (tag 0)
+                               (comm *standard-communicator*)
+                               (mode :basic))
+  "A non-blocking variant of MPI-SEND. It returns immediately. To check
+  whether the send operation is complete, use MPI-WAIT or MPI-TEST.
 
-(defun mpi-broadcast-foreign (inout-buffer count cffi-type root &key (comm *mpi-comm-world*))
-  (declare (type (signed-byte 32) root count))
-  (%mpi-bcast inout-buffer count (cffi-type-to-mpi-type cffi-type) root comm))
+WARNING: The caller of MPI-ISEND is responsible that the given array is not
+relocated or garbage-collected until the send operation is complete. This can
+be achieved by using STATIC-VECTORS or some implementation dependent
+mechanism such as sb-sys:with-pinned-objects."
+  (declare (type simple-array array)
+           (type (signed-byte 32) dest tag)
+           (type mpi-comm comm)
+           (type (member :basic :buffered :synchronous :ready) mode)
+           (values mpi-request))
+  (let ((send-function
+          (ecase mode
+            (:basic #'%mpi-isend)
+            (:buffered #'%mpi-ibsend)
+            (:synchronous #'%mpi-issend)
+            (:ready #'%mpi-irsend))))
+    (multiple-value-bind (ptr type count)
+        (simple-array-data array)
+      (with-foreign-results ((request 'mpi-request))
+        (funcall send-function ptr count type dest tag comm request)))))
 
-(defun mpi-broadcast (object root &key (comm *mpi-comm-world*))
-  "Return the value of OBJECT given by the process with the rank ROOT. The value of
-OBJECT is ignored in all other processes."
-  (declare (type (signed-byte 32) root))
-  (with-foreign-object (count-mem :int)
-    (let ((data #())
-          (is-root (= root (mpi-comm-rank comm))))
-      (when is-root
-        (setf data (conspack:encode object))
-        (setf (mem-ref count-mem :int) (length data)))
-      ;; step 1: broadcast size of message
-      (mpi-broadcast-foreign count-mem 1 :int root :comm comm)
-      (let* ((count (mem-ref count-mem :int))
-             (data (if is-root
-                       data
-                       (make-array count :element-type '(unsigned-byte 8)))))
-        (with-foreign-object (buffer :uchar count)
-          (when is-root
-            (loop for i from 0 below count do
-              (setf (mem-ref buffer :uchar i) (aref data i))))
-          ;; step 2: broadcast message
-          (mpi-broadcast-foreign buffer count :uchar root :comm comm)
-          (unless is-root
-            (loop for i from 0 below count do
-              (setf (aref data i) (mem-ref buffer :uchar i)))))
-        (mpi-barrier)
-        (conspack:decode data)))))
+(defun mpi-receive (array source &key
+                                   (tag +mpi-any-tag+)
+                                   (comm *standard-communicator*))
+  (declare (type simple-array array)
+           (type (signed-byte 32) source tag)
+           (type mpi-comm comm))
+  (with-pinned-arrays (array)
+    (multiple-value-bind (ptr type count)
+        (simple-array-data array) ;; TODO check the mpi-status
+      (%mpi-recv ptr count type source tag comm +mpi-status-ignore+))))
 
-(defun mpi-send (dest object &key (tag 0) (comm *mpi-comm-world*))
-  (declare (type (signed-byte 32) dest tag))
-  (let* ((data (conspack:encode object :stream :static))
-         (count (length data)))
-    (with-foreign-object (sendbuf :uchar count)
-      (loop for i from 0 below count do
-        (setf (mem-ref sendbuf :uchar i) (aref data i)))
-      (mpi-send-foreign dest sendbuf count :uchar :tag tag :comm comm))))
-
-(defun mpi-receive (source &key (tag +mpi-any-tag+) (comm *mpi-comm-world*))
-  (declare (type (signed-byte 32) source tag))
-  (with-foreign-objects ((status '(:struct mpi-status))
-                         (count-mem :int))
-    (%mpi-probe source tag comm status)
-    (%mpi-get-count status *mpi-unsigned-char* count-mem)
-    (let* ((count (mem-ref count-mem :int))
-           (data (make-array count :element-type '(unsigned-byte 8))))
-      (with-foreign-object (buf :uchar count)
-        (mpi-receive-foreign source buf count :uchar :tag tag :comm comm)
-        (loop for i from 0 below count do
-          (setf (aref data i) (mem-ref buf :uchar i)))
-        (values (conspack:decode data) ; TODO
-                )))))
-
-(defun mpi-comm-group (comm)
+(defun mpi-comm-group (&optional (comm *standard-communicator*))
   (make-instance
    'mpi-group
-   :mpi-object-handle
-   (pointer-ref (newgroup 'mpi-group)
+   :foreign-object
+   (with-foreign-results ((newgroup 'mpi-group))
      (%mpi-comm-group comm newgroup))))
 
 (defun mpi-group-size (group)
-  (pointer-ref (size :int)
+  (with-foreign-results ((size :int))
     (%mpi-group-size group size)))
 
 (defun mpi-group-rank (group)
-  (pointer-ref (rank :int)
+  (with-foreign-results ((rank :int))
     (%mpi-group-rank group rank)))
 
 (defun mpi-group-union (group1 group2)
-    (pointer-ref (newgroup 'mpi-group)
-      (%mpi-group-union group1 group2 newgroup)))
+  (with-foreign-results ((newgroup 'mpi-group))
+    (%mpi-group-union group1 group2 newgroup)))
 
 (defun mpi-group-intersection (group1 group2)
-  (pointer-ref (newgroup 'mpi-group)
+  (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-intersection group1 group2 newgroup)))
 
 (defun mpi-group-difference (group1 group2)
-  (pointer-ref (newgroup 'mpi-group)
+  (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-difference group1 group2 newgroup)))
 
 ;; (defun mpi-group-select-from (group &rest ranges)
@@ -236,26 +305,30 @@ OBJECT is ignored in all other processes."
 ;; (defmpifun "MPI-Group-free" (group mpi-group))
 ;;(defun mpi-group-free (group) (MPI-Group-free group))
 
-(defun mpi-comm-size (&optional (comm *mpi-comm-world*))
+(defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For
-*mpi-comm-world*, it indicates the total number of processes available."
-  (pointer-ref (size :int)
++mpi-comm-world+, it indicates the total number of processes available."
+  (with-foreign-results ((size :int))
     (%mpi-comm-size comm size)))
 
-(defun mpi-comm-rank (&optional (comm *mpi-comm-world*))
+(defun mpi-comm-rank (&optional (comm *standard-communicator*))
   "Returns the rank of the process in a given communicator."
-  (pointer-ref (rank :int)
+  (with-foreign-results ((rank :int))
     (%mpi-comm-rank comm rank)))
 
-(defun mpi-comm-create (group &key (comm *mpi-comm-world*))
+(defun mpi-comm-create (group &key (comm *standard-communicator*))
   (make-instance
    'mpi-comm
-   :mpi-object-handle
-   (pointer-ref (newcomm 'mpi-comm)
-    (%mpi-comm-create comm group newcomm))))
+   :foreign-object
+   (with-foreign-results ((newcomm 'mpi-comm))
+     (%mpi-comm-create comm group newcomm))))
 
+(defun mpi-type-size (datatype)
+  (with-foreign-results ((size :int))
+    (%mpi-type-size datatype size)))
 
-;;; after careful consideration I decided it is the right thing to call
-;;; MPI-INIT as soon as cl-mpi is loaded. Otherwise all MPI calls exhibit
-;;; unspecified behaviour.
-(eval-when (:load-toplevel :execute) (mpi-init))
+;;; after some consideration I decided it is the right thing to call MPI-INIT
+;;; as soon as cl-mpi is loaded. Otherwise all MPI calls exhibit unspecified
+;;; behavior.
+(eval-when (:load-toplevel :execute)
+  (mpi-init))
