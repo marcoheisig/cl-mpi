@@ -60,6 +60,10 @@ THE SOFTWARE.
     #+openmpi foreign-pointer
     #-openmpi (unsigned-byte 32))))
 
+(defmethod make-load-form ((object mpi-object) &optional env)
+  (declare (ignore env))
+  (make-load-form-saving-slots object)) ;; TODO handle foreign-pointers
+
 (defclass mpi-errhandler (mpi-object) ())
 
 (defclass mpi-comm (mpi-object)

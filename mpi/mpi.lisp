@@ -103,15 +103,6 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
        ,@body
        (values ,@results))))
 
-(defmacro with-pinned-arrays ((&rest objects) &body body)
-  "Ensure or assert that the given arrays will not be moved during the execution
-of BODY."
-  #+sbcl
-  `(sb-sys:with-pinned-objects ,objects
-     ,@body)
-  #-sbcl
-  `,body)
-
 (defun mpi-init ()
   "This routine must be called before any other MPI routine. It must be called
 at most once; subsequent calls are erroneous (see MPI-INITIALIZED).
@@ -176,15 +167,14 @@ system)."
   (declare (type simple-array out in)
            (type (signed-byte 32)
                  dest send-tag source  recv-tag))
-  (with-pinned-arrays (out in)
-    (multiple-value-bind (send-buf send-type send-count)
-        (static-vector-mpi-data out)
-      (multiple-value-bind (recv-buf recv-type recv-count)
+  (multiple-value-bind (send-buf send-type send-count)
+      (static-vector-mpi-data out)
+    (multiple-value-bind (recv-buf recv-type recv-count)
         (static-vector-mpi-data in)
-        (%mpi-sendrecv
-         send-buf send-count send-type dest send-tag
-         recv-buf recv-count recv-type source recv-tag
-         comm +mpi-status-ignore+)))))
+      (%mpi-sendrecv
+       send-buf send-count send-type dest send-tag
+       recv-buf recv-count recv-type source recv-tag
+       comm +mpi-status-ignore+))))
 
 (defun mpi-send (array dest &key
                               (tag 0)
@@ -204,10 +194,9 @@ sender and receiver side do not match."
             (:buffered #'%mpi-bsend)
             (:synchronous #'%mpi-ssend)
             (:ready #'%mpi-rsend))))
-    (with-pinned-arrays (array)
-      (multiple-value-bind (ptr type count)
-          (static-vector-mpi-data array)
-        (funcall send-function ptr count type dest tag comm)))))
+    (multiple-value-bind (ptr type count)
+        (static-vector-mpi-data array)
+      (funcall send-function ptr count type dest tag comm))))
 
 (defun mpi-isend (array dest &key
                                (tag 0)
@@ -223,8 +212,7 @@ mechanism such as sb-sys:with-pinned-objects."
   (declare (type simple-array array)
            (type (signed-byte 32) dest tag)
            (type mpi-comm comm)
-           (type (member :basic :buffered :synchronous :ready) mode)
-           (values mpi-request))
+           (type (member :basic :buffered :synchronous :ready) mode))
   (let ((send-function
           (ecase mode
             (:basic #'%mpi-isend)
@@ -242,10 +230,9 @@ mechanism such as sb-sys:with-pinned-objects."
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
            (type mpi-comm comm))
-  (with-pinned-arrays (array)
-    (multiple-value-bind (ptr type count)
-        (static-vector-mpi-data array) ;; TODO check the mpi-status
-      (%mpi-recv ptr count type source tag comm +mpi-status-ignore+))))
+  (multiple-value-bind (ptr type count)
+      (static-vector-mpi-data array) ;; TODO check the mpi-status
+    (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
 
 (defun mpi-comm-group (&optional (comm *standard-communicator*))
   (make-instance
@@ -274,33 +261,71 @@ mechanism such as sb-sys:with-pinned-objects."
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-difference group1 group2 newgroup)))
 
-;; (defun mpi-group-select-from (group &rest ranges)
-;;   "Create a new MPI group consisting of a subset of the ranks of the original
-;;  group. A valid range can be
-;;   - an integer
-;;   - a list of the form (first-rank last-rank &optional step-size)"
-;;   (let ((n (length ranges)))
-;;     (with-foreign-objects ((mem :int (* 3 n)) (newgroup 'mpi-group))
-;;       (loop for range-spec in ranges and i from 0 by 3
-;;          with step-size = 1 and last-rank and first-rank do
-;;            (cond
-;;              ((integerp range-spec)
-;;               (setf first-rank range-spec)
-;;               (setf last-rank range-spec))
-;;              ((listp range-spec)
-;;               (setf first-rank (car range-spec))
-;;               (setf last-rank (cadr range-spec))
-;;               (setf step-size (if (cddr range-spec) (caddr range-spec) 1)))
-;;              (t (error "invalid range spec")))
-;;            (setf (mem-aref mem :int (+ i 0)) first-rank)
-;;            (setf (mem-aref mem :int (+ i 1)) last-rank)
-;;            (setf (mem-aref mem :int (+ i 2)) step-size))
-;;       (MPI-Group-range-incl group n mem newgroup)
-;;       (mem-ref newgroup 'MPI-Group))))
+(defun mpi-group-incl (group &rest ranges)
+  "Create a new MPI group consisting of a subset of the ranks of the original
+ group. A valid range can be
+  - an integer
+  - a list of the form (first-rank last-rank &optional step-size)"
+  (let ((count (length ranges)))
+    (make-instance
+     'mpi-group
+     :foreign-object
+     (with-foreign-results ((newgroup 'mpi-group))
+       (with-foreign-object (spec :int (* 3 count))
+         (loop for range-spec in ranges and i from 0 by 3
+               with step-size = 1 and last-rank and first-rank do
+                 (etypecase range-spec
+                   (integer
+                    (setf first-rank range-spec)
+                    (setf last-rank range-spec))
+                   ((cons integer (cons integer null))
+                    (setf first-rank (car range-spec))
+                    (setf last-rank (cadr range-spec)))
+                   ((cons integer (cons integer (cons integer null)))
+                    (setf first-rank (car range-spec))
+                    (setf last-rank (cadr range-spec))
+                    (setf step-size (caddr range-spec))))
+                 (setf (mem-aref spec :int (+ i 0)) first-rank)
+                 (setf (mem-aref spec :int (+ i 1)) last-rank)
+                 (setf (mem-aref spec :int (+ i 2)) step-size))
+         (%mpi-group-range-incl group count spec newgroup))))))
 
-;; (defmpifun "MPI-Group-excl" (group :pointer) (n :int) (ranks :pointer) (newgroup :pointer))
-;; (defmpifun "MPI-Group-free" (group mpi-group))
-;;(defun mpi-group-free (group) (MPI-Group-free group))
+(defun mpi-group-excl (group &rest ranges)
+  "Create a new MPI group consisting of a subset of the ranks of the original
+ group. A valid range can be
+  - an integer
+  - a list of the form (first-rank last-rank &optional step-size)"
+  (let ((count (length ranges)))
+    (make-instance
+     'mpi-group
+     :foreign-object
+     (with-foreign-results ((newgroup 'mpi-group))
+       (with-foreign-objects ((spec :int (* 3 count)))
+         (loop for range-spec in ranges and i from 0 by 3
+               with step-size = 1 and last-rank and first-rank do
+                 (etypecase range-spec
+                   (integer
+                    (setf first-rank range-spec)
+                    (setf last-rank range-spec))
+                   ((cons integer (cons integer null))
+                    (setf first-rank (car range-spec))
+                    (setf last-rank (cadr range-spec)))
+                   ((cons integer (cons integer (cons integer null)))
+                    (setf first-rank (car range-spec))
+                    (setf last-rank (cadr range-spec))
+                    (setf step-size (caddr range-spec))))
+                 (setf (mem-aref spec :int (+ i 0)) first-rank)
+                 (setf (mem-aref spec :int (+ i 1)) last-rank)
+                 (setf (mem-aref spec :int (+ i 2)) step-size))
+         (%mpi-group-range-excl group count spec newgroup))))))
+
+(defun mpi-group-free (&rest groups)
+  (loop for group in groups do
+    (let ((ptr (foreign-alloc 'mpi-group
+                              :initial-element (slot-value group 'foreign-object))))
+      (%mpi-group-free ptr)
+      (setf (slot-value group 'foreign-object)
+            (mem-ref ptr 'mpi-group)))))
 
 (defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For

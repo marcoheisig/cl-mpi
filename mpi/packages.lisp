@@ -1,7 +1,7 @@
 (defpackage :mpi
   (:nicknames cl-mpi)
   (:documentation "CL-MPI: Common Lisp bindings for the Message Passing Interface MPI")
-  (:use :cl :cffi :uiop)
+  (:use :cl :cffi :uiop :static-vectors)
   (:export
 
    ;; constants and handles
@@ -64,7 +64,9 @@
    mpi-comm-size
    mpi-comm-group
    mpi-group-size
-   mpi-group-select-from
+   mpi-group-incl
+   mpi-group-excl
+   mpi-group-free
    mpi-get-processor-name
    mpi-barrier
    mpi-wtime

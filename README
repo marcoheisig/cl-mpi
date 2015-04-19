@@ -5,6 +5,8 @@ latency in the range of microseconds.
 
 If you have any questions or suggestions, feel free to contact me.
 
+cl-mpi has been tested with mpich2 and openmpi.
+
 * Usage
   An MPI program must be launched with "mpirun" or "mpiexec". These commands
   spawn multiple processes depending on your system and commandline
@@ -18,6 +20,7 @@ If you have any questions or suggestions, feel free to contact me.
 * Testing
   To run the testsuite:
   mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi)" --eval "(mpi:mpi-finalize)"
+  mpirun -np 2 ccl -e "(asdf:test-system :cl-mpi) (mpi:mpi-finalize)"
 
   To run the benchmarks
   mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi-benchmarks)" --eval "(mpi:mpi-finalize)"
@@ -40,12 +43,3 @@ If you have any questions or suggestions, feel free to contact me.
   - collective operations
   - extensive testing
   - convenient communication layers on top of MPI
-
-* Changes from 0.1.0 to 0.5.0
-  - Openmpi support out of the box
-  - MPI errors are reported via Common Lisp conditions
-  - improved testsuite
-  - MPI operations operate very efficiently on static-vectors (including
-    strings!)
-  - added a benchmark suite
-
