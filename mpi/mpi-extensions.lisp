@@ -23,19 +23,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
+(in-package :mpi)
+
 #+nil
 (defun mpi-send-anything (object dest &key
                                         (tag 0)
                                         (comm *standard-communicator*))
   "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It can
   transmit any object to a matching MPI-RECEIVE-ANYTHING."
-  )
+  (let ((message (conspack:encode object)))
+    (mpi-send message dest :tag tag :comm comm)))
+
 #+nil
 (defun mpi-receive-anything (source &key
                                       (tag +mpi-any-tag+)
                                       (comm *standard-communicator*))
   "MPI-RECEIVE-ANYTHING returns an object that was passed to a matching
-  MPI-SEND-ANYTHING." )
+  MPI-SEND-ANYTHING."
+  ())
 #+nil
 (defun mpi-broadcast-anything (object root &key
                                              (tag +mpi-any-tag+)

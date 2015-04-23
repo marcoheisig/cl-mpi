@@ -1,4 +1,4 @@
-(defsystem cl-mpi-benchmarks
+(defsystem mpi-benchmarks
   :depends-on (:cl-mpi :cffi)
   :perform (test-op (o s)
                     (uiop:symbol-call

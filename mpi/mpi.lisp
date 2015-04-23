@@ -82,8 +82,9 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
              ((simple-array (unsigned-byte 32) (*)) +mpi-uint32-t+)
              ((simple-array (signed-byte 64) (*)) +mpi-int64-t+)
              ((simple-array (unsigned-byte 64) (*)) +mpi-uint64-t+)
+             #+sbcl
              ((simple-array character (*))
-              #+sb-unicode +mpi-uint32-t+ ;; TODO sbcl-specific
+              #+sb-unicode +mpi-uint32-t+
               #-sb-unicode +mpi-uint8-t+)))
          (count (length vector))
          (pointer (static-vectors:static-vector-pointer vector)))
@@ -233,6 +234,16 @@ mechanism such as sb-sys:with-pinned-objects."
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array) ;; TODO check the mpi-status
     (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
+
+#+nil
+(defun mpi-probe (source &key ;; TODO
+                           (tag +mpi-any-tag+)
+                           (comm *standard-communicator*))
+  (with-foreign-object (status '(:pointer (:struct mpi-status)))
+    (%mpi-probe source tag comm status)
+    (with-foreign-slots ((mpi-tag mpi-error) status mpi-status)
+      (let ((count (%mpi-get-count status)))
+        (values count mpi-tag)))))
 
 (defun mpi-comm-group (&optional (comm *standard-communicator*))
   (make-instance

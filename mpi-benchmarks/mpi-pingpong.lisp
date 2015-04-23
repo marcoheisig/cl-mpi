@@ -1,10 +1,10 @@
 
 (in-package :mpi-benchmarks)
 
-(defun fast-pingpong (msg-size iterations comm)
+(defun pingpong (msg-size iterations comm)
   (declare (type (signed-byte 32) msg-size iterations))
-  (let ((sbuf (make-array msg-size :element-type '(signed-byte 32)))
-        (rbuf (make-array msg-size :element-type '(signed-byte 32)))
+  (let ((sbuf (make-static-vector msg-size :element-type '(signed-byte 32)))
+        (rbuf (make-static-vector msg-size :element-type '(signed-byte 32)))
         (rank (mpi-comm-rank comm)))
     (loop for i from 0 below msg-size do
       (progn (setf (aref sbuf i) 1)
