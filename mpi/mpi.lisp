@@ -48,52 +48,87 @@ THE SOFTWARE.
 (defun mpi-type-to-cffi-type (mpi-type)
   "Convert MPI_INT to :int and so on"
   (declare (type mpi-datatype mpi-type))
-  (cond
-    ((eq mpi-type +mpi-char+) :char)
-    ((eq mpi-type +mpi-unsigned-char+) :unsigned-char)
-    ((eq mpi-type +mpi-short+) :short)
-    ((eq mpi-type +mpi-unsigned-short+) :unsigned-short)
-    ((eq mpi-type +mpi-int+) :int)
-    ((eq mpi-type +mpi-unsigned+) :unsigned-int)
-    ((eq mpi-type +mpi-long+) :long)
-    ((eq mpi-type +mpi-unsigned-long+) :unsigned-long)
-    ((eq mpi-type +mpi-long-long-int+) :long-long)
-    ((eq mpi-type +mpi-unsigned-long-long+) :unsigned-long-long)
-    ((eq mpi-type +mpi-float+) :float)
-    ((eq mpi-type +mpi-double+) :double)))
+  (let ((ptr (foreign-object mpi-type)))
+    (cond
+      ((pointer-eq ptr (foreign-object +mpi-char+)) :char)
+      ((pointer-eq ptr (foreign-object +mpi-unsigned-char+)) :unsigned-char)
+      ((pointer-eq ptr (foreign-object +mpi-short+)) :short)
+      ((pointer-eq ptr (foreign-object +mpi-unsigned-short+)) :unsigned-short)
+      ((pointer-eq ptr (foreign-object +mpi-int+)) :int)
+      ((pointer-eq ptr (foreign-object +mpi-unsigned+)) :unsigned-int)
+      ((pointer-eq ptr (foreign-object +mpi-long+)) :long)
+      ((pointer-eq ptr (foreign-object +mpi-unsigned-long+)) :unsigned-long)
+      ((pointer-eq ptr (foreign-object +mpi-long-long-int+)) :long-long)
+      ((pointer-eq ptr (foreign-object +mpi-unsigned-long-long+)) :unsigned-long-long)
+      ((pointer-eq ptr (foreign-object +mpi-float+)) :float)
+      ((pointer-eq ptr (foreign-object +mpi-double+)) :double))))
 
-
-(defun static-vector-mpi-data (vector)
+(defun static-vector-mpi-data (vector start end)
   "Return a pointer to the raw memory of the given array, as well as the
 corresponding mpi-type and length. This is highly implementation dependent.
 
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
   (declare (type (simple-array * (*)) vector))
-  (let* ((mpi-type
-           (etypecase vector
-             ((simple-array single-float (*)) +mpi-float+)
-             ((simple-array double-float (*)) +mpi-double+)
-             ((simple-array (signed-byte 8) (*)) +mpi-int8-t+)
-             ((simple-array (unsigned-byte 8) (*)) +mpi-uint8-t+)
-             ((simple-array (signed-byte 16) (*)) +mpi-int16-t+)
-             ((simple-array (unsigned-byte 16) (*)) +mpi-uint16-t+)
-             ((simple-array (signed-byte 32) (*)) +mpi-int32-t+)
-             ((simple-array (unsigned-byte 32) (*)) +mpi-uint32-t+)
-             ((simple-array (signed-byte 64) (*)) +mpi-int64-t+)
-             ((simple-array (unsigned-byte 64) (*)) +mpi-uint64-t+)
-             #+sbcl
-             ((simple-array character (*))
-              #+sb-unicode +mpi-uint32-t+
-              #-sb-unicode +mpi-uint8-t+)))
-         (count (length vector))
-         (pointer (static-vectors:static-vector-pointer vector)))
-    (values pointer mpi-type count)))
+  (declare (values foreign-pointer
+                   mpi-datatype
+                   (integer 0 #.array-total-size-limit)))
+  (let* ((element-size
+           #.(let ((cases
+                     (loop for type in
+                           '(single-float     double-float
+                             (signed-byte 1)  (unsigned-byte 1)
+                             (signed-byte 2)  (unsigned-byte 2)
+                             (signed-byte 4)  (unsigned-byte 4)
+                             (signed-byte 8)  (unsigned-byte 8)
+                             (signed-byte 16) (unsigned-byte 16)
+                             (signed-byte 32) (unsigned-byte 32)
+                             (signed-byte 64) (unsigned-byte 64)
+                             base-char character)
+                           collect
+                           `((simple-array ,type (*))
+                             ,(%array-element-size type)))))
+               `(etypecase vector
+                  ,@cases)))
+         (len (length vector))
+         (end (if end end len)))
+    (assert (<= 0 start end len))
+    (let ((offset (ceiling (* start element-size)))
+          (count (- end start)))
+      (ecase element-size
+        (1/8 (values
+              (static-vector-pointer vector :offset offset)
+              +mpi-uint8-t+
+              (ceiling count 8)))
+        (1/4 (values
+              (static-vector-pointer vector :offset offset)
+              +mpi-uint8-t+
+              (ceiling count 4)))
+        (1/2 (values
+              (static-vector-pointer vector :offset offset)
+              +mpi-uint8-t+
+              (ceiling count 2)))
+        (1 (values
+            (static-vector-pointer vector :offset offset)
+            +mpi-uint8-t+
+            count))
+        (2 (values
+            (static-vector-pointer vector :offset offset)
+            +mpi-uint16-t+
+            count))
+        (4 (values
+            (static-vector-pointer vector :offset offset)
+            +mpi-uint32-t+
+            count))
+        (8 (values
+            (static-vector-pointer vector :offset offset)
+            +mpi-uint64-t+
+            count))))))
 
 (defmacro with-foreign-results (bindings &body body)
   "Evaluate body as with WITH-FOREIGN-OBJECTS, but afterwards convert them to
   lisp objects and return them via VALUES."
-   ;; TOOD bindings are currently evaluated multiple times
+  ;; TOOD bindings are currently evaluated multiple times
   (let ((results
           (loop for binding in bindings
                 collect
@@ -169,15 +204,17 @@ system)."
            (type (signed-byte 32)
                  dest send-tag source  recv-tag))
   (multiple-value-bind (send-buf send-type send-count)
-      (static-vector-mpi-data out)
+      (static-vector-mpi-data out 0 nil)
     (multiple-value-bind (recv-buf recv-type recv-count)
-        (static-vector-mpi-data in)
+        (static-vector-mpi-data in 0 nil)
       (%mpi-sendrecv
        send-buf send-count send-type dest send-tag
        recv-buf recv-count recv-type source recv-tag
        comm +mpi-status-ignore+))))
 
 (defun mpi-send (array dest &key
+                              (start 0)
+                              (end nil)
                               (tag 0)
                               (comm *standard-communicator*)
                               (mode :basic))
@@ -196,10 +233,12 @@ sender and receiver side do not match."
             (:synchronous #'%mpi-ssend)
             (:ready #'%mpi-rsend))))
     (multiple-value-bind (ptr type count)
-        (static-vector-mpi-data array)
+        (static-vector-mpi-data array start end)
       (funcall send-function ptr count type dest tag comm))))
 
 (defun mpi-isend (array dest &key
+                               (start 0)
+                               (end nil)
                                (tag 0)
                                (comm *standard-communicator*)
                                (mode :basic))
@@ -221,29 +260,32 @@ mechanism such as sb-sys:with-pinned-objects."
             (:synchronous #'%mpi-issend)
             (:ready #'%mpi-irsend))))
     (multiple-value-bind (ptr type count)
-        (static-vector-mpi-data array)
+        (static-vector-mpi-data array start end)
       (with-foreign-results ((request 'mpi-request))
         (funcall send-function ptr count type dest tag comm request)))))
 
 (defun mpi-receive (array source &key
+                                   (start 0)
+                                   (end nil)
                                    (tag +mpi-any-tag+)
                                    (comm *standard-communicator*))
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
            (type mpi-comm comm))
   (multiple-value-bind (ptr type count)
-      (static-vector-mpi-data array) ;; TODO check the mpi-status
+      (static-vector-mpi-data array start end) ;; TODO check the mpi-status
     (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
 
-#+nil
-(defun mpi-probe (source &key ;; TODO
+(defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
-  (with-foreign-object (status '(:pointer (:struct mpi-status)))
+  (with-foreign-object (status '(:struct mpi-status))
     (%mpi-probe source tag comm status)
-    (with-foreign-slots ((mpi-tag mpi-error) status mpi-status)
-      (let ((count (%mpi-get-count status)))
-        (values count mpi-tag)))))
+    (with-foreign-slots ((mpi-tag mpi-error) status (:struct mpi-status))
+      (values
+       (with-foreign-results ((count :int))
+         (%mpi-get-count status +mpi-byte+ count))
+       mpi-tag))))
 
 (defun mpi-comm-group (&optional (comm *standard-communicator*))
   (make-instance

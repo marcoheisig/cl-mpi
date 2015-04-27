@@ -60,22 +60,18 @@ THE SOFTWARE.
     #+openmpi foreign-pointer
     #-openmpi (unsigned-byte 32))))
 
-(defmethod make-load-form ((object mpi-object) &optional env)
-  (declare (ignore env))
-  (make-load-form-saving-slots object)) ;; TODO handle foreign-pointers
-
 (defclass mpi-errhandler (mpi-object) ())
-
-(defclass mpi-comm (mpi-object)
-  ((mpi-protocol
-    :accessor mpi-protocol
-    :initarg :mpi-protocol)))
-
+(defclass mpi-comm (mpi-object) ())
 (defclass mpi-group (mpi-object) ())
 (defclass mpi-datatype (mpi-object) ())
 (defclass mpi-op (mpi-object) ())
 (defclass mpi-info (mpi-object) ())
 (defclass mpi-request (mpi-object) ())
+
+(defmethod make-load-form ((object mpi-object) &optional env)
+  (declare (ignore env))
+  `(make-instance ',(class-of object)
+                  :name ,(name object)))
 
 (defmacro define-mpi-object-expander (type foreign-type)
   `(defmethod expand-to-foreign (value (type ,foreign-type))
@@ -140,3 +136,37 @@ THE SOFTWARE.
     `(let ((,return-value ,value))
        (unless (zerop ,return-value)
          (signal-mpi-error ,return-value)))))
+
+(defun %array-element-size (type)
+    "Compute the number of bytes reserved per element of a simple-array. May
+return fractions of a byte, e.g. for bitvectors.
+
+Examples (sbcl on x86-64):
+> (%ARRAY-ELEMENT-SIZE 'character)         -> 4
+> (%ARRAY-ELEMENT-SIZE 'base-char)         -> 1
+> (%ARRAY-ELEMENT-SIZE '(unsigned-byte 1)) -> 1/8
+> (%ARRAY-ELEMENT-SIZE '(unsigned-byte 2)) -> 1/4
+> (%ARRAY-ELEMENT-SIZE '(unsigned-byte 9)) -> 2
+> (%ARRAY-ELEMENT-SIZE 'double-float)      -> 8"
+    (let* ((initial-element
+             (cond
+               ((subtypep type 'character) #\B)
+               ((subtypep type 'float) (coerce 0 type))
+               (t 0)))
+           (test-array
+             (make-static-vector 2 :element-type type
+                                   :initial-element initial-element))
+           (ptr (static-vector-pointer test-array)))
+      ;; flip more and more bits until the second value of the static array
+      ;; changes. The upper bound of 128 should never be reached and is only a
+      ;; safeguard against overwriting the whole heap in case of something odd.
+      (loop for bit from 0 to 128 do
+        (setf (mem-ref ptr :uint8 (floor bit 8))
+              (expt 2 (mod bit 8)))
+            when (not
+                  (eql (aref test-array 1)
+                       initial-element))
+              do (free-static-vector test-array)
+                 (return (/ bit 8))
+            finally
+               (error "Unknown array memory layout. Possible memory corruption!"))))
