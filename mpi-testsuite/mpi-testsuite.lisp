@@ -29,23 +29,6 @@
     (is (stringp processor-name))
     (is (plusp (length processor-name)))))
 
-(test (datatypes :depends-on mpi-init)
-  "Check whether the CFFI types and MPI types actually correspond"
-  (let ((mpi-types
-          (list
-           +mpi-char+ +mpi-unsigned-char+
-           +mpi-short+ +mpi-unsigned-short+
-           +mpi-int+ +mpi-unsigned+
-           +mpi-long+ +mpi-unsigned-long+
-           +mpi-long-long-int+ +mpi-unsigned-long-long+
-           +mpi-float+ +mpi-double+)))
-    (is (every #'=
-               (mapcar #'mpi-type-size mpi-types)
-               (mapcar #'(lambda (mpi-type)
-                           (foreign-type-size
-                            (mpi-type-to-cffi-type mpi-type)))
-                       mpi-types)))))
-
 (test (mpi-barrier :depends-on mpi-init)
   "synchronize all processes with multiple MPI barriers"
   (loop for i from 0 below 10 do (mpi-barrier)))

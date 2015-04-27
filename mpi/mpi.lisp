@@ -28,49 +28,15 @@ THE SOFTWARE.
 
 ;;; helper functions
 
-(defun cffi-type-to-mpi-type (cffi-type)
-  "Convert :int to MPI_INT and so on"
-  (declare (type keyword cffi-type))
-  (ecase cffi-type
-    ((:char) +mpi-char+)
-    ((:uchar :unsigned-char) +mpi-unsigned-char+)
-    ((:short) +mpi-short+)
-    ((:ushort :unsigned-short) +mpi-unsigned-short+)
-    ((:int) +mpi-int+)
-    ((:uint :unsigned-int) +mpi-unsigned+)
-    ((:long) +mpi-long+)
-    ((:ulong :unsigned-long) +mpi-unsigned-long+)
-    ((:llong :long-long) +mpi-long-long-int+)
-    ((:ullong :unsigned-long-long) +mpi-unsigned-long-long+)
-    ((:float) +mpi-float+)
-    ((:double) +mpi-double+)))
-
-(defun mpi-type-to-cffi-type (mpi-type)
-  "Convert MPI_INT to :int and so on"
-  (declare (type mpi-datatype mpi-type))
-  (let ((ptr (foreign-object mpi-type)))
-    (cond
-      ((pointer-eq ptr (foreign-object +mpi-char+)) :char)
-      ((pointer-eq ptr (foreign-object +mpi-unsigned-char+)) :unsigned-char)
-      ((pointer-eq ptr (foreign-object +mpi-short+)) :short)
-      ((pointer-eq ptr (foreign-object +mpi-unsigned-short+)) :unsigned-short)
-      ((pointer-eq ptr (foreign-object +mpi-int+)) :int)
-      ((pointer-eq ptr (foreign-object +mpi-unsigned+)) :unsigned-int)
-      ((pointer-eq ptr (foreign-object +mpi-long+)) :long)
-      ((pointer-eq ptr (foreign-object +mpi-unsigned-long+)) :unsigned-long)
-      ((pointer-eq ptr (foreign-object +mpi-long-long-int+)) :long-long)
-      ((pointer-eq ptr (foreign-object +mpi-unsigned-long-long+)) :unsigned-long-long)
-      ((pointer-eq ptr (foreign-object +mpi-float+)) :float)
-      ((pointer-eq ptr (foreign-object +mpi-double+)) :double))))
-
 (defun static-vector-mpi-data (vector start end)
   "Return a pointer to the raw memory of the given array, as well as the
-corresponding mpi-type and length. This is highly implementation dependent.
+corresponding mpi-type and length.
 
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
-  (declare (type (simple-array * (*)) vector))
-  (declare (values foreign-pointer
+  (declare (type (simple-array * (*)) vector)
+           (type (or (integer 0 #.array-total-size-limit) null) start end)
+           (values foreign-pointer
                    mpi-datatype
                    (integer 0 #.array-total-size-limit)))
   (let* ((element-size
@@ -91,39 +57,25 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
                `(etypecase vector
                   ,@cases)))
          (len (length vector))
+         (start (if start start len))
          (end (if end end len)))
     (assert (<= 0 start end len))
-    (let ((offset (ceiling (* start element-size)))
-          (count (- end start)))
-      (ecase element-size
-        (1/8 (values
-              (static-vector-pointer vector :offset offset)
-              +mpi-uint8-t+
-              (ceiling count 8)))
-        (1/4 (values
-              (static-vector-pointer vector :offset offset)
-              +mpi-uint8-t+
-              (ceiling count 4)))
-        (1/2 (values
-              (static-vector-pointer vector :offset offset)
-              +mpi-uint8-t+
-              (ceiling count 2)))
-        (1 (values
-            (static-vector-pointer vector :offset offset)
-            +mpi-uint8-t+
-            count))
-        (2 (values
-            (static-vector-pointer vector :offset offset)
-            +mpi-uint16-t+
-            count))
-        (4 (values
-            (static-vector-pointer vector :offset offset)
-            +mpi-uint32-t+
-            count))
-        (8 (values
-            (static-vector-pointer vector :offset offset)
-            +mpi-uint64-t+
-            count))))))
+    (if (integerp element-size)
+        (let* ((offset (ceiling (* start element-size)))
+               (count (- end start))
+               (ptr (static-vector-pointer vector :offset offset)))
+          (ecase element-size
+            (1 (values ptr +mpi-uint8-t+ count))
+            (2 (values ptr +mpi-uint16-t+ count))
+            (4 (values ptr +mpi-uint32-t+ count))
+            (8 (values ptr +mpi-uint64-t+ count))))
+        (let* ((offset (ceiling (* start element-size)))
+               (count (- end start))
+               (ptr (static-vector-pointer vector :offset offset)))
+          (ecase element-size
+            (1/8 (values ptr +mpi-uint8-t+ (ceiling count 8)))
+            (1/4 (values ptr +mpi-uint8-t+ (ceiling count 4)))
+            (1/2 (values ptr +mpi-uint8-t+ (ceiling count 2))))))))
 
 (defmacro with-foreign-results (bindings &body body)
   "Evaluate body as with WITH-FOREIGN-OBJECTS, but afterwards convert them to
