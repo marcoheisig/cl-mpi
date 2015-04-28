@@ -26,8 +26,6 @@ THE SOFTWARE.
 
 (in-package :mpi)
 
-;;; helper functions
-
 (defun static-vector-mpi-data (vector start end)
   "Return a pointer to the raw memory of the given array, as well as the
 corresponding mpi-type and length.
@@ -228,6 +226,17 @@ mechanism such as sb-sys:with-pinned-objects."
       (static-vector-mpi-data array start end) ;; TODO check the mpi-status
     (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
 
+(defun mpi-broadcast (array root &key
+                               (start 0)
+                               (end nil)
+                               (comm *standard-communicator*))
+  (declare (type simple-array array)
+           (type (signed-byte 32) root)
+           (type mpi-comm comm))
+  (multiple-value-bind (ptr type count)
+      (static-vector-mpi-data array start end)
+    (%mpi-bcast ptr count type root comm)))
+
 (defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
@@ -349,6 +358,13 @@ mechanism such as sb-sys:with-pinned-objects."
    :foreign-object
    (with-foreign-results ((newcomm 'mpi-comm))
      (%mpi-comm-create comm group newcomm))))
+
+(defun mpi-comm-dup (&optional (comm *standard-communicator*))
+  (make-instance
+   'mpi-comm
+   :foreign-object
+   (with-foreign-results ((newcomm 'mpi-comm))
+     (%mpi-comm-dup comm newcomm))))
 
 (defun mpi-type-size (datatype)
   (with-foreign-results ((size :int))

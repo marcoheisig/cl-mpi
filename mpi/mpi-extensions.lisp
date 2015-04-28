@@ -25,25 +25,46 @@ THE SOFTWARE.
 
 (in-package :mpi)
 
-#+nil
 (defun mpi-send-anything (object dest &key
                                         (tag 0)
                                         (comm *standard-communicator*))
   "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It can
   transmit any object to a matching MPI-RECEIVE-ANYTHING."
-  (let ((message (conspack:encode object)))
-    (mpi-send message dest :tag tag :comm comm)))
+  (let ((buffer (conspack:encode object :stream :static)))
+    (mpi-send buffer dest :tag tag :comm comm)
+    (free-static-vector buffer)))
 
-#+nil
 (defun mpi-receive-anything (source &key
                                       (tag +mpi-any-tag+)
                                       (comm *standard-communicator*))
   "MPI-RECEIVE-ANYTHING returns an object that was passed to a matching
   MPI-SEND-ANYTHING."
-  ())
-#+nil
-(defun mpi-broadcast-anything (object root &key
-                                             (tag +mpi-any-tag+)
-                                             (comm *standard-communicator*))
+  (let* ((len (mpi-probe source))
+         (buffer (make-static-vector len :element-type '(unsigned-byte 8))))
+    (mpi-receive buffer source :tag tag :comm comm)
+    (prog1 (conspack:decode buffer)
+      (free-static-vector buffer))))
+
+(defun mpi-broadcast-anything (root &key
+                                      (comm *standard-communicator*)
+                                      (object))
   "The node with rank ROOT sends the given object to every other rank in the
-  communicator COMM.")
+  communicator COMM."
+  (cond
+    ((= root (mpi-comm-rank))
+     (let* ((sendbuf (conspack:encode object :stream :static))
+            (size (make-static-vector 1 :element-type '(signed-byte 64)
+                                        :initial-element (length sendbuf))))
+       (mpi-broadcast size root :comm comm)
+       (mpi-broadcast sendbuf root :comm comm)
+       (prog1 object
+         (free-static-vector sendbuf)
+         (free-static-vector size))))
+    (t
+     (let ((size (make-static-vector 1 :element-type '(signed-byte 64))))
+       (mpi-broadcast size root :comm comm)
+       (let ((recvbuf (make-static-vector (aref size 0))))
+         (mpi-broadcast recvbuf root :comm comm)
+         (prog1 (conspack:decode recvbuf)
+           (free-static-vector recvbuf)
+           (free-static-vector size)))))))

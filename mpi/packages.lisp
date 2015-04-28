@@ -75,6 +75,7 @@
    mpi-send
    mpi-receive
    mpi-sendreceive
+   mpi-broadcast
    mpi-send-anything
    mpi-receive-anything
    mpi-broadcast-anything
