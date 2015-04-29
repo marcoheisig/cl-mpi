@@ -1,7 +1,8 @@
 (defpackage :mpi
   (:nicknames cl-mpi)
   (:documentation "CL-MPI: Common Lisp bindings for the Message Passing Interface MPI")
-  (:use :cl :cffi :uiop :static-vectors)
+  (:use :cl :cffi :static-vectors :alexandria)
+  (:import-from :uiop #:version<=)
   (:export
 
    ;; constants and handles

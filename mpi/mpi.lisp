@@ -227,9 +227,9 @@ mechanism such as sb-sys:with-pinned-objects."
     (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
 
 (defun mpi-broadcast (array root &key
-                               (start 0)
-                               (end nil)
-                               (comm *standard-communicator*))
+                                   (start 0)
+                                   (end nil)
+                                   (comm *standard-communicator*))
   (declare (type simple-array array)
            (type (signed-byte 32) root)
            (type mpi-comm comm))
@@ -275,63 +275,61 @@ mechanism such as sb-sys:with-pinned-objects."
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-difference group1 group2 newgroup)))
 
-(defun mpi-group-incl (group &rest ranges)
-  "Create a new MPI group consisting of a subset of the ranks of the original
- group. A valid range can be
-  - an integer
-  - a list of the form (first-rank last-rank &optional step-size)"
-  (let ((count (length ranges)))
-    (make-instance
-     'mpi-group
-     :foreign-object
-     (with-foreign-results ((newgroup 'mpi-group))
-       (with-foreign-object (spec :int (* 3 count))
-         (loop for range-spec in ranges and i from 0 by 3
-               with step-size = 1 and last-rank and first-rank do
-                 (etypecase range-spec
-                   (integer
-                    (setf first-rank range-spec)
-                    (setf last-rank range-spec))
-                   ((cons integer (cons integer null))
-                    (setf first-rank (car range-spec))
-                    (setf last-rank (cadr range-spec)))
-                   ((cons integer (cons integer (cons integer null)))
-                    (setf first-rank (car range-spec))
-                    (setf last-rank (cadr range-spec))
-                    (setf step-size (caddr range-spec))))
-                 (setf (mem-aref spec :int (+ i 0)) first-rank)
-                 (setf (mem-aref spec :int (+ i 1)) last-rank)
-                 (setf (mem-aref spec :int (+ i 2)) step-size))
-         (%mpi-group-range-incl group count spec newgroup))))))
+(defun to-mpi-rank-spec (rank-spec)
+  (let* ((count (length rank-spec))
+         (buffer (foreign-alloc :int :count (* 3 count))))
+    (loop for spec in rank-spec and i from 0 by 3
+          with step-size = 1 and last-rank and first-rank do
+            (etypecase spec
+              (integer
+               (setf first-rank spec)
+               (setf last-rank spec))
+              ((cons integer (cons integer null))
+               (setf first-rank (car spec))
+               (setf last-rank (cadr spec)))
+              ((cons integer (cons integer (cons integer null)))
+               (setf first-rank (car spec))
+               (setf last-rank (cadr spec))
+               (setf step-size (caddr spec))))
+            (setf (mem-aref buffer :int (+ i 0)) first-rank)
+            (setf (mem-aref buffer :int (+ i 1)) last-rank)
+            (setf (mem-aref buffer :int (+ i 2)) step-size))
+    buffer))
 
-(defun mpi-group-excl (group &rest ranges)
+(defmacro with-mpi-rank-spec ((spec-name count-name)
+                              (rank-spec) &body body)
+  (check-type spec-name symbol)
+  (check-type count-name symbol)
+  (once-only (rank-spec)
+    `(let ((,count-name (length ,rank-spec))
+           (,spec-name (to-mpi-rank-spec ,rank-spec)))
+       (unwind-protect
+            (progn ,@body)
+         (foreign-free ,spec-name)))))
+
+(defun mpi-group-incl (group &rest rank-spec)
   "Create a new MPI group consisting of a subset of the ranks of the original
  group. A valid range can be
   - an integer
   - a list of the form (first-rank last-rank &optional step-size)"
-  (let ((count (length ranges)))
-    (make-instance
+  (make-instance
      'mpi-group
      :foreign-object
      (with-foreign-results ((newgroup 'mpi-group))
-       (with-foreign-objects ((spec :int (* 3 count)))
-         (loop for range-spec in ranges and i from 0 by 3
-               with step-size = 1 and last-rank and first-rank do
-                 (etypecase range-spec
-                   (integer
-                    (setf first-rank range-spec)
-                    (setf last-rank range-spec))
-                   ((cons integer (cons integer null))
-                    (setf first-rank (car range-spec))
-                    (setf last-rank (cadr range-spec)))
-                   ((cons integer (cons integer (cons integer null)))
-                    (setf first-rank (car range-spec))
-                    (setf last-rank (cadr range-spec))
-                    (setf step-size (caddr range-spec))))
-                 (setf (mem-aref spec :int (+ i 0)) first-rank)
-                 (setf (mem-aref spec :int (+ i 1)) last-rank)
-                 (setf (mem-aref spec :int (+ i 2)) step-size))
-         (%mpi-group-range-excl group count spec newgroup))))))
+       (with-mpi-rank-spec (spec count) (rank-spec)
+         (%mpi-group-range-incl group count spec newgroup)))))
+
+(defun mpi-group-excl (group &rest rank-spec)
+  "Create a new MPI group consisting of a subset of the ranks of the original
+ group. A valid range can be
+  - an integer
+  - a list of the form (first-rank last-rank &optional step-size)"
+  (make-instance
+     'mpi-group
+     :foreign-object
+     (with-foreign-results ((newgroup 'mpi-group))
+       (with-mpi-rank-spec (spec count) (rank-spec)
+         (%mpi-group-range-excl group count spec newgroup)))))
 
 (defun mpi-group-free (&rest groups)
   (loop for group in groups do

@@ -13,7 +13,7 @@
   :author "Marco Heisig <marco.heisig@fau.de>"
   :version "0.5"
   :license "MIT"
-  :depends-on (:alexandria :cffi :cl-ppcre :static-vectors :cl-conspack)
+  :depends-on (:alexandria :cffi :cl-ppcre :static-vectors :cl-conspack :uiop)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
   :components
   ((:module "mpi"
