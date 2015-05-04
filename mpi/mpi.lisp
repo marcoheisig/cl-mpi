@@ -78,16 +78,11 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
 (defmacro with-foreign-results (bindings &body body)
   "Evaluate body as with WITH-FOREIGN-OBJECTS, but afterwards convert them to
   lisp objects and return them via VALUES."
-  ;; TOOD bindings are currently evaluated multiple times
-  (let ((results
-          (loop for binding in bindings
-                collect
-                (if (cddr binding)
-                    `(mem-ref ,(car binding) (:array ,(cadr binding) ,(caddr binding)))
-                    `(mem-ref ,@binding)))))
-    `(with-foreign-objects ,bindings
-       ,@body
-       (values ,@results))))
+  `(with-foreign-objects ,bindings
+     ,@body
+     (values
+      ,@(loop for binding in bindings
+              collect `(mem-ref ,@binding)))))
 
 (defun mpi-init ()
   "This routine must be called before any other MPI routine. It must be called
