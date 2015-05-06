@@ -8,15 +8,11 @@
 (in-suite mpi-testsuite)
 
 (test (mpi-init)
-  "MPI Initialization"
+  "MPI Initialization."
   (is (mpi-initialized) "failed to initialize MPI (or cl-mpi is broken)"))
 
-(test (error-handling :depends-on mpi-init)
-  "Test whether MPI errors are properly handled"
-  (is (stringp (mpi-error-string 0))))
-
 (test (size-and-rank :depends-on mpi-init)
-  "Checking whether it is possible to determine size and rank"
+  "Check whether it is possible to determine size and rank."
   (let ((size (mpi-comm-size))
         (rank (mpi-comm-rank)))
     (is (> size 0) "Invalid size of +mpi-comm-world+")
@@ -24,17 +20,17 @@
 
 (test (processor-name :depends-on mpi-init)
   "The function mpi-get-processor-name should return a string describing the
-  current processor in use"
+  current processor in use."
   (let ((processor-name (mpi-get-processor-name)))
     (is (stringp processor-name))
     (is (plusp (length processor-name)))))
 
 (test (mpi-barrier :depends-on mpi-init)
-  "synchronize all processes with multiple MPI barriers"
+  "synchronize all processes with multiple MPI barriers."
   (loop for i from 0 below 10 do (mpi-barrier)))
 
 (test (serial-groups :depends-on size-and-rank)
-  "MPI group tests that can be run on a single process"
+  "MPI group tests that can be run on a single process."
   (let* ((size (mpi-comm-size))
          (all-procs (mpi-comm-group +mpi-comm-world+))
          (first (mpi-group-incl all-procs 0))
@@ -51,7 +47,7 @@
     (mpi-group-free all-procs first all-but-first odds evens)))
 
 (test (parallel :depends-on size-and-rank)
-  "Is there more than one MPI process"
+  "Check whether there is more than one MPI process."
   (let ((size (mpi-comm-size))
         (rank (mpi-comm-rank)))
     (is (> size 1) "More than one MPI process is required for most MPI tests")
@@ -60,7 +56,7 @@
       (setf *test-dribble* (make-broadcast-stream)))))
 
 (test (mpi-ring :depends-on parallel)
-  "Send a Common Lisp datastructure through all nodes"
+  "Send a Common Lisp datastructure through all nodes."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size))
         (buffer (make-static-vector 11 :element-type 'character
@@ -69,18 +65,19 @@
                                        :initial-contents "+foobar!+")))
     (let ((left-neighbor  (mod (- rank 1) size))
           (right-neighbor (mod (+ rank 1) size)))
-      (cond ((= 0 rank)
-             (mpi-send message right-neighbor :start 1 :end 8)
-             (mpi-receive buffer left-neighbor :start 2 :end 9)
-             (is (string= "  foobar!  " buffer)))
-            (t
-             (mpi-receive buffer left-neighbor :start 2 :end 9)
-             (mpi-send buffer right-neighbor :start 2 :end 9))))
-    (free-static-vector buffer)
-    (free-static-vector message)))
+      (unwind-protect
+           (cond ((= 0 rank)
+                  (mpi-send message right-neighbor :start 1 :end 8)
+                  (mpi-receive buffer left-neighbor :start 2 :end 9)
+                  (is (string= "  foobar!  " buffer)))
+                 (t
+                  (mpi-receive buffer left-neighbor :start 2 :end 9)
+                  (mpi-send buffer right-neighbor :start 2 :end 9)))
+        (free-static-vector buffer)
+        (free-static-vector message)))))
 
 (test (mpi-sendreceive :depends-on parallel)
-  "Send a Common Lisp datastructure through all nodes"
+  "Send a Common Lisp datastructure through all nodes using mpi-sendreceive."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
     (let ((left-neighbor  (mod (- rank 1) size))
@@ -91,10 +88,42 @@
                                               :initial-element 0))
           (my-buffer    (make-static-vector 1 :element-type '(unsigned-byte 64)
                                               :initial-element rank)))
-      (mpi-sendreceive my-buffer right-neighbor left-buffer left-neighbor)
-      (mpi-sendreceive my-buffer left-neighbor right-buffer right-neighbor)
-      (is (= (aref left-buffer 0) left-neighbor))
-      (is (= (aref right-buffer 0) right-neighbor))
-      (free-static-vector left-buffer)
-      (free-static-vector right-buffer)
-      (free-static-vector my-buffer))))
+      (unwind-protect
+           (progn
+             (mpi-sendreceive my-buffer right-neighbor left-buffer left-neighbor)
+             (mpi-sendreceive my-buffer left-neighbor right-buffer right-neighbor))
+        (is (= (aref left-buffer 0) left-neighbor))
+        (is (= (aref right-buffer 0) right-neighbor))
+        (free-static-vector left-buffer)
+        (free-static-vector right-buffer)
+        (free-static-vector my-buffer)))))
+
+(test (mpi-broadcast :depends-on parallel)
+  "Use mpi-broadcast to broadcast a single number."
+  (let ((rank (mpi-comm-rank))
+        (size (mpi-comm-size)))
+    (let ((buffer (make-static-vector 1 :element-type 'double-float))
+          (root (- size 1))
+          (message (coerce pi 'double-float)))
+      (if (= rank root)
+          (setf (aref buffer 0) message))
+      (unwind-protect (mpi-broadcast buffer root)
+        (is (= (aref buffer 0) message))
+        (free-static-vector buffer)))))
+
+(test (mpi-allgather :depends-on parallel)
+  "Use mpi-allgather to generate a vector of all ranks."
+  (let ((rank (mpi-comm-rank))
+        (size (mpi-comm-size)))
+    (let ((recv-array (make-static-vector size :element-type '(signed-byte 32)
+                                               :initial-element 0))
+          (send-array (make-static-vector 1 :element-type '(signed-byte 32)
+                                            :initial-element rank)))
+      (unwind-protect (mpi-allgather send-array recv-array)
+        (is (loop for i below size
+                  when (/= (aref recv-array i) i) do
+                       (return nil)
+                  finally
+                     (return t)))
+        (free-static-vector recv-array)
+        (free-static-vector send-array)))))

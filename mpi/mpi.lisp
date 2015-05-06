@@ -85,11 +85,8 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
               collect `(mem-ref ,@binding)))))
 
 (defun mpi-init ()
-  "This routine must be called before any other MPI routine. It must be called
-at most once; subsequent calls are erroneous (see MPI-INITIALIZED).
-
-All MPI programs must contain a call to MPI-INIT; this routine must be called
-before any other MPI routine (apart from MPI-INITIALIZED) is called."
+  "In CL-MPI, MPI-INIT is automatically called called at load-time and
+subsequent calls have no effect."
   (unless (mpi-initialized)
     (%mpi-init (null-pointer) (null-pointer))
     ;; by default MPI reacts to each failure by crashing the process. This is
@@ -232,6 +229,21 @@ mechanism such as sb-sys:with-pinned-objects."
       (static-vector-mpi-data array start end)
     (%mpi-bcast ptr count type root comm)))
 
+(defun mpi-allgather (send-array recv-array &key
+                                              (send-start 0)
+                                              (send-end nil)
+                                              (recv-start 0)
+                                              (recv-end nil)
+                                              (comm *standard-communicator*))
+  (declare (type simple-array send-array recv-array))
+  (multiple-value-bind (sendbuf sendtype sendcount)
+      (static-vector-mpi-data send-array send-start send-end)
+    (multiple-value-bind (recvbuf recvtype recvcount)
+        (static-vector-mpi-data recv-array recv-start recv-end)
+      (declare (ignore recvcount))
+      (%mpi-allgather sendbuf sendcount sendtype
+                      recvbuf sendcount recvtype comm))))
+
 (defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
@@ -308,11 +320,11 @@ mechanism such as sb-sys:with-pinned-objects."
   - an integer
   - a list of the form (first-rank last-rank &optional step-size)"
   (make-instance
-     'mpi-group
-     :foreign-object
-     (with-foreign-results ((newgroup 'mpi-group))
-       (with-mpi-rank-spec (spec count) (rank-spec)
-         (%mpi-group-range-incl group count spec newgroup)))))
+   'mpi-group
+   :foreign-object
+   (with-foreign-results ((newgroup 'mpi-group))
+     (with-mpi-rank-spec (spec count) (rank-spec)
+       (%mpi-group-range-incl group count spec newgroup)))))
 
 (defun mpi-group-excl (group &rest rank-spec)
   "Create a new MPI group consisting of a subset of the ranks of the original
@@ -320,11 +332,11 @@ mechanism such as sb-sys:with-pinned-objects."
   - an integer
   - a list of the form (first-rank last-rank &optional step-size)"
   (make-instance
-     'mpi-group
-     :foreign-object
-     (with-foreign-results ((newgroup 'mpi-group))
-       (with-mpi-rank-spec (spec count) (rank-spec)
-         (%mpi-group-range-excl group count spec newgroup)))))
+   'mpi-group
+   :foreign-object
+   (with-foreign-results ((newgroup 'mpi-group))
+     (with-mpi-rank-spec (spec count) (rank-spec)
+       (%mpi-group-range-excl group count spec newgroup)))))
 
 (defun mpi-group-free (&rest groups)
   (loop for group in groups do
