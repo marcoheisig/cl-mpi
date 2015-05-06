@@ -170,3 +170,7 @@ Examples (sbcl on x86-64):
                  (return (/ bit 8))
             finally
                (error "Unknown array memory layout. Possible memory corruption!"))))
+
+(defun mpi-object= (a b)
+  (pointer-eq (foreign-object a)
+              (foreign-object b)))

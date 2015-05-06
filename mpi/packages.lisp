@@ -56,6 +56,7 @@
    mpi-group
    mpi-op
    mpi-datatype
+   mpi-object=
 
    ;; functions
    mpi-init
@@ -77,13 +78,12 @@
    mpi-receive
    mpi-sendreceive
    mpi-broadcast
+   mpi-allgather
+
+   ;; extensions
    mpi-send-anything
    mpi-receive-anything
-   mpi-broadcast-anything
-   mpi-error-string
-   mpi-type-size
-   mpi-type-to-cffi-type
-   cffi-type-to-mpi-type))
+   mpi-broadcast-anything))
 
 (defpackage :mpi-header
   (:documentation "All constants extracted from mpi.h"))
