@@ -17,10 +17,10 @@
         (unless (zerop exit-code) (error err-msg))
         (let ((libraries ()))
           (ppcre:do-scans (match-start match-end reg-starts reg-ends "\\s-l(\\S+)" flags)
-            (setf libraries
-                  (cons (format nil "lib~A.so"
-                                (subseq flags (aref reg-starts 0) (aref reg-ends 0)))
-                        libraries)))
+            (let ((libname (subseq flags (aref reg-starts 0) (aref reg-ends 0))))
+              (unless (string-equal libname "pthread")
+                (push (format nil "lib~A.so" libname)
+                      libraries))))
           (unless libraries (error "no suitable MPI libraries found"))
           libraries))
     (specify-libraries ()
