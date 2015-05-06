@@ -58,7 +58,7 @@ THE SOFTWARE.
     :initarg :foreign-object
     :type
     #+openmpi foreign-pointer
-    #-openmpi (unsigned-byte 32))))
+    #-openmpi (signed-byte 32))))
 
 (defclass mpi-errhandler (mpi-object) ())
 (defclass mpi-comm (mpi-object) ())
