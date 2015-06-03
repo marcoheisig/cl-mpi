@@ -20,13 +20,14 @@
         (source (component-pathname c)))
     (let ((possible-commands
             (list
-             (format nil "mpicc -shared -o ~A ~A" target source)
+             (format nil "mpicc -shared -fPIC -o ~A ~A" target source)
              ;; more commands can be added here if there is a system where the
              ;; above command fails
              )))
       (flet ((execution-successful-p (cmd)
                (multiple-value-bind (stdout stderr exit-code)
                    (run-program cmd :ignore-error-status t)
+                 (declare (ignore stdout stderr))
                  (zerop exit-code))))
         (unless (some #'execution-successful-p possible-commands)
           (error 'operation-error :component c :operation o))))))
