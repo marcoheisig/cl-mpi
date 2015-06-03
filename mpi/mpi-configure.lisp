@@ -9,32 +9,10 @@
 ;;;; contact me if your favourite MPI implementation (or the one you have to
 ;;;; use) does not work out of the box.
 
-(defun detect-mpi-libraries ()
-  "guess all libraries that must be loaded in order to use mpi"
-  (restart-case
-      (multiple-value-bind (flags err-msg exit-code)
-          (uiop:run-program "mpicc -show" :output :string)
-        (unless (zerop exit-code) (error err-msg))
-        (let ((libraries ()))
-          (ppcre:do-scans (match-start match-end reg-starts reg-ends "\\s-l(\\S+)" flags)
-            (let ((libname (subseq flags (aref reg-starts 0) (aref reg-ends 0))))
-              (unless (string-equal libname "pthread")
-                (push (format nil "lib~A.so" libname)
-                      libraries))))
-          (unless libraries (error "no suitable MPI libraries found"))
-          libraries))
-    (specify-libraries ()
-      :report "Specify the MPI libraries manually, something like (\"libmpi.so\")"
-      :interactive read)))
-
-(defvar *mpi-libraries* nil)
-
 (declaim (type (member :openmpi :mpich :mpich2 :unknown) *mpi-implementation*))
 (defvar *mpi-implementation* :unknown)
 
 (defun configure-mpi ()
-  (setf *mpi-libraries* (detect-mpi-libraries))
-  (mapcar #'load-foreign-library *mpi-libraries*)
   (cond
     ;; openmpi
     ((or (boundp 'mpi-header::OPEN_MPI)
