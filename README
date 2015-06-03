@@ -23,7 +23,7 @@ cl-mpi has been tested with mpich2 and openmpi.
   mpirun -np 2 ccl -e "(asdf:test-system :cl-mpi) (mpi:mpi-finalize)"
 
   To run the benchmarks
-  mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi-benchmarks)" --eval "(mpi:mpi-finalize)"
+  mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :mpi-benchmarks)" --eval "(mpi:mpi-finalize)"
 
 * Authors
   Alex Fukunaga

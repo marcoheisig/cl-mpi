@@ -9,6 +9,7 @@
 
 (test (mpi-init)
   "MPI Initialization."
+  (mpi-init)
   (is (mpi-initialized) "failed to initialize MPI (or cl-mpi is broken)"))
 
 (test (size-and-rank :depends-on mpi-init)

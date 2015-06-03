@@ -374,9 +374,3 @@ mechanism such as sb-sys:with-pinned-objects."
 (defun mpi-type-size (datatype)
   (with-foreign-results ((size :int))
     (%mpi-type-size datatype size)))
-
-;;; after some consideration I decided it is the right thing to call MPI-INIT
-;;; as soon as cl-mpi is loaded. Otherwise all MPI calls exhibit unspecified
-;;; behavior.
-(eval-when (:load-toplevel :execute)
-  (mpi-init))

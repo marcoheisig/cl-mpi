@@ -65,6 +65,7 @@
    mpi-comm-rank
    mpi-comm-size
    mpi-comm-group
+   mpi-comm-dup
    mpi-group-size
    mpi-group-incl
    mpi-group-excl
