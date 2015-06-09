@@ -17,10 +17,14 @@ cl-mpi has been tested with mpich2 and openmpi.
   A wide range of communication functions is avilable to transmit messages
   between different ranks.
 
+  In case you change the MPI implementation of your system, cl-mpi needs to be
+  rebuilt. To do this you have to delete the file cl-mpi/mpi/cl-mpi-stub.so
+  and run (asdf:load-system :cl-mpi :force t)
+
 * Testing
   To run the testsuite:
   mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :cl-mpi)" --eval "(mpi:mpi-finalize)"
-  mpirun -np 2 ccl -e "(asdf:test-system :cl-mpi) (mpi:mpi-finalize)"
+  mpirun -np 2 ccl -e "(asdf:test-system :cl-mpi) (mpi:mpi-finalize) (uiop:quit 0)"
 
   To run the benchmarks
   mpirun -np 2 sbcl --noinform --quit --eval "(asdf:test-system :mpi-benchmarks)" --eval "(mpi:mpi-finalize)"
