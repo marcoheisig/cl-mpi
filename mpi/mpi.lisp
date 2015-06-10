@@ -101,6 +101,11 @@ subsequent calls have no effect."
   (with-foreign-results ((flag :boolean))
     (%mpi-initialized flag)))
 
+(defun mpi-finalized ()
+  "Returns true if MPI_FINALIZE has been called and nil otherwise."
+  (with-foreign-results ((flag :boolean))
+    (%mpi-finalized flag)))
+
 (defun mpi-abort(&key (comm *standard-communicator*) (errcode -1))
   "This routine makes a 'best attempt' to abort all tasks in the group of
 comm. This function does not require that the invoking environment take any

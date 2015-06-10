@@ -18,8 +18,7 @@ cl-mpi has been tested with mpich2 and openmpi.
   between different ranks.
 
   In case you change the MPI implementation of your system, cl-mpi needs to be
-  rebuilt. To do this you have to delete the file cl-mpi/mpi/cl-mpi-stub.so
-  and run (asdf:load-system :cl-mpi :force t)
+  rebuilt. To do this, simply run (asdf:load-system :cl-mpi :force t).
 
 * Testing
   To run the testsuite:
@@ -40,11 +39,41 @@ cl-mpi has been tested with mpich2 and openmpi.
 
   Another big thanks to Nicolas Neuss for all the useful suggestions.
 
-* TODOs
-  - parallel IO
-  - one-sided MPI 3.0 communications
-  - full MPI benchmark suite
-  - MPI extensions
-  - collective operations
-  - extensive testing
-  - convenient communication layers on top of MPI
+* TODOs (roughly in orde of priority)
+** one-sided MPI 3.0 communications
+   - memory windows
+   - get/put operations
+** more collective operations
+   - allgatherv
+   - allreduce
+   - alltoall
+   - alltoallw
+   - allgatherv
+   - scatter / scatterv
+   - reduce
+   - scan
+** MPI IO
+   - make MPI IO play nicely with lisp streams, pathnames, etc.
+** full MPI benchmark suite
+   - pingping
+   - sendrecv
+   - exchange
+   - allreduce
+   - reduce
+   - reduce_scatter
+   - allgather/allgatherv
+   - gather
+   - scatter / scatterv
+   - alltoall / alltoallv
+   - barrier
+   - ...-ANYTHING MPI extensions
+** MPI extensions
+   - coarrays
+   - checkpointing
+** testsuite improvements
+   - one test per function
+   - failure of individual ranks should be propagated to all ranks so that it
+     is enough to see whether rank zero passes the testsuite
+   - at least one real application test, e.g. a finite-difference solver
+** datatype handling
+   - model the memory of Lisp arrays via MPI_Datatypes

@@ -43,8 +43,6 @@
 (defmethod perform ((o load-op) (c mpi-library))
   (cffi:load-foreign-library (output-file 'compile-op c)))
 
-(in-package :asdf-user)
-
 (asdf:defsystem :cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
   :author "Marco Heisig <marco.heisig@fau.de>"
@@ -57,8 +55,8 @@
     :serial t
     :components
     ((:file "packages")
-     ("cffi-grovel:grovel-file" "mpi-grovel")
-     ("cl-mpi-system:mpi-library" "cl-mpi-stub")
+     (cffi-grovel:grovel-file "mpi-grovel")
+     (cl-mpi-system:mpi-library "cl-mpi-stub")
      (:file "mpi-configure")
      (:file "mpi-types")
      (:file "mpi-variables")
