@@ -4,7 +4,10 @@
                     (uiop:symbol-call
                      :fiveam  '#:run!
                      (uiop:find-symbol* '#:mpi-testsuite :mpi-testsuite)))
+  :serial t
   :components
   ((:module "mpi-testsuite"
             :components
-            ((:file "mpi-testsuite")))))
+            ((:file "packages")
+             (:file "serial-tests")
+             (:file "parallel-tests")))))

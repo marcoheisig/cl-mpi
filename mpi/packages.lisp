@@ -9,6 +9,9 @@
    +mpi-any-source+
    +mpi-any-tag+
    +mpi-status-ignore+
+   +mpi-proc-null+
+   +mpi-root+
+   +mpi-undefined+
    +mpi-comm-world+ ; communicators
    +mpi-comm-self+
    +mpi-comm-null+

@@ -1,6 +1,6 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI types for Common Lisp
+CLOS wrappers for all MPI handles
 
 Copyright (C) 2015  Marco Heisig <marco.heisig@fau.de>
 
@@ -23,7 +23,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package :mpi)
+
+(in-package :cl-mpi)
 
 (define-foreign-type mpi-object-type ()
   ()
@@ -137,40 +138,8 @@ THE SOFTWARE.
        (unless (zerop ,return-value)
          (signal-mpi-error ,return-value)))))
 
-(defun %array-element-size (type)
-    "Compute the number of bytes reserved per element of a simple-array. May
-return fractions of a byte, e.g. for bitvectors.
-
-Examples (sbcl on x86-64):
-> (%ARRAY-ELEMENT-SIZE 'character)         -> 4
-> (%ARRAY-ELEMENT-SIZE 'base-char)         -> 1
-> (%ARRAY-ELEMENT-SIZE '(unsigned-byte 1)) -> 1/8
-> (%ARRAY-ELEMENT-SIZE '(unsigned-byte 2)) -> 1/4
-> (%ARRAY-ELEMENT-SIZE '(unsigned-byte 9)) -> 2
-> (%ARRAY-ELEMENT-SIZE 'double-float)      -> 8"
-    (let* ((initial-element
-             (cond
-               ((subtypep type 'character) #\B)
-               ((subtypep type 'float) (coerce 0 type))
-               (t 0)))
-           (test-array
-             (make-static-vector 2 :element-type type
-                                   :initial-element initial-element))
-           (ptr (static-vector-pointer test-array)))
-      ;; flip more and more bits until the second value of the static array
-      ;; changes. The upper bound of 128 should never be reached and is only a
-      ;; safeguard against overwriting the whole heap in case of something odd.
-      (loop for bit from 0 to 128 do
-        (setf (mem-ref ptr :uint8 (floor bit 8))
-              (expt 2 (mod bit 8)))
-            when (not
-                  (eql (aref test-array 1)
-                       initial-element))
-              do (free-static-vector test-array)
-                 (return (/ bit 8))
-            finally
-               (error "Unknown array memory layout. Possible memory corruption!"))))
-
 (defun mpi-object= (a b)
   (pointer-eq (foreign-object a)
               (foreign-object b)))
+
+

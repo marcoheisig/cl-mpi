@@ -1,8 +1,9 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI variables, actually mostly constants
+Lisp-accessible variables from mpi.h
 
-Copyright (C) 2015  Marco Heisig <marco.heisig@fau.de>
+Copyright (c) 2008,2009  Alex Fukunaga
+Copyright (C) 2014,2015  Marco Heisig <marco.heisig@fau.de>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,27 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package :mpi)
-
-(defconstant +mpi-version+
-  (if (boundp '+mpi-version+)
-      +mpi-version+
-      (format nil "~D.~D"
-              mpi-header::MPI_VERSION
-              mpi-header::MPI_SUBVERSION)))
-
-(defconstant +mpi-max-error-string+ mpi-header::MPI_MAX_ERROR_STRING)
-(defconstant +mpi-max-processor-name+ mpi-header::MPI_MAX_PROCESSOR_NAME)
-(defconstant +mpi-any-tag+ mpi-header::MPI_ANY_TAG)
-(defconstant +mpi-any-source+ mpi-header::MPI_ANY_SOURCE)
-(defconstant +mpi-proc-null+ mpi-header::MPI_PROC_NULL)
-(defconstant +mpi-root+ mpi-header::MPI_ROOT)
-(defconstant +mpi-undefined+ mpi-header::MPI_UNDEFINED)
-
-(defconstant +mpi-status-ignore+
-  (if (boundp '+mpi-status-ignore+)
-      (symbol-value '+mpi-status-ignore+)
-      (make-pointer mpi-header::MPI_STATUS_IGNORE)))
+(in-package :cl-mpi)
 
 (defmacro define-mpi-object (type mpi-name)
   (let ((basename (subseq (symbol-name mpi-name) 4)) ; drop the MPI_ prefix

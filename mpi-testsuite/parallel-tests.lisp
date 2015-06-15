@@ -1,79 +1,37 @@
-(defpackage :mpi-testsuite
-  (:use :cl :mpi :5am :uiop :cffi :static-vectors))
-
 (in-package :mpi-testsuite)
-
-(def-suite mpi-testsuite :description "All MPI related tests.")
-
 (in-suite mpi-testsuite)
 
-(test (mpi-init)
-  "MPI Initialization."
-  (mpi-init)
-  (is (mpi-initialized) "failed to initialize MPI (or cl-mpi is broken)"))
-
-(test (size-and-rank :depends-on mpi-init)
-  "Check whether it is possible to determine size and rank."
-  (let ((size (mpi-comm-size))
-        (rank (mpi-comm-rank)))
-    (is (> size 0) "Invalid size of +mpi-comm-world+")
-    (is (> size rank -1) "Invalid MPI rank")))
-
-(test (processor-name :depends-on mpi-init)
-  "The function mpi-get-processor-name should return a string describing the
-  current processor in use."
-  (let ((processor-name (mpi-get-processor-name)))
-    (is (stringp processor-name))
-    (is (plusp (length processor-name)))))
-
-(test (mpi-barrier :depends-on mpi-init)
-  "synchronize all processes with multiple MPI barriers."
-  (loop for i from 0 below 10 do (mpi-barrier)))
-
-(test (serial-groups :depends-on size-and-rank)
-  "MPI group tests that can be run on a single process."
-  (let* ((size (mpi-comm-size))
-         (all-procs (mpi-comm-group +mpi-comm-world+))
-         (first (mpi-group-incl all-procs 0))
-         (all-but-first (mpi-group-excl all-procs 0))
-         (evens (mpi-group-incl all-procs `(0 ,(- size 1) 2)))
-         (odds  (if (> size 1)
-                    (mpi-group-excl all-procs `(1 ,(- size 1) 2))
-                    (mpi-group-incl all-procs))))
-    (is (= size (mpi-group-size all-procs)))
-    (is (= 1 (mpi-group-size first)))
-    (is (= (- size 1) (mpi-group-size all-but-first)))
-    (is (= (ceiling size 2) (mpi-group-size evens)))
-    (is (= (floor size 2) (mpi-group-size odds)))
-    (mpi-group-free all-procs first all-but-first odds evens)))
-
-(test (parallel :depends-on size-and-rank)
-  "Check whether there is more than one MPI process."
-  (let ((size (mpi-comm-size))
-        (rank (mpi-comm-rank)))
-    (is (> size 1) "More than one MPI process is required for most MPI tests")
-    ;; discard the output of all but one MPI process
-    (unless (zerop rank)
-      (setf *test-dribble* (make-broadcast-stream)))))
+(defun team-partner (&optional rank size)
+  "Group all processes in teams of two. Return the rank of the partner."
+  (let ((rank (or rank (mpi-comm-rank)))
+        (size (or size (mpi-comm-size))))
+    (cond
+      ((and (oddp size)
+            (>= rank (- size 1)))
+       +mpi-proc-null+)
+      ((evenp rank)
+       (+ rank 1))
+      ((oddp rank)
+       (- rank 1)))))
 
 (test (mpi-ring :depends-on parallel)
   "Send a Common Lisp datastructure through all nodes."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size))
-        (buffer (make-static-vector 11 :element-type 'character
-                                       :initial-element #\SPACE))
-        (message (make-static-vector 9 :element-type 'character
-                                       :initial-contents "+foobar!+")))
+        (buffer (make-static-vector 7 :element-type 'character
+                                      :initial-element #\SPACE))
+        (message (make-static-vector 7 :element-type 'character
+                                       :initial-contents "foobar!")))
     (let ((left-neighbor  (mod (- rank 1) size))
           (right-neighbor (mod (+ rank 1) size)))
       (unwind-protect
            (cond ((= 0 rank)
-                  (mpi-send message right-neighbor :start 1 :end 8)
-                  (mpi-receive buffer left-neighbor :start 2 :end 9)
-                  (is (string= "  foobar!  " buffer)))
+                  (mpi-send message right-neighbor)
+                  (mpi-receive buffer left-neighbor)
+                  (is (string= "foobar!" buffer)))
                  (t
-                  (mpi-receive buffer left-neighbor :start 2 :end 9)
-                  (mpi-send buffer right-neighbor :start 2 :end 9)))
+                  (mpi-receive buffer left-neighbor)
+                  (mpi-send buffer right-neighbor)))
         (free-static-vector buffer)
         (free-static-vector message)))))
 
@@ -98,6 +56,23 @@
         (free-static-vector left-buffer)
         (free-static-vector right-buffer)
         (free-static-vector my-buffer)))))
+
+(test (send-subsequence :depends-on mpi-sendreceive)
+  "Send only a subsequence of an array"
+  (let* ((my-rank (mpi-comm-rank))
+        (partner (team-partner my-rank))
+        (recvbuf (make-static-vector 11 :element-type 'character
+                                        :initial-element #\SPACE))
+        (sendbuf (make-static-vector 9 :element-type 'character
+                                       :initial-contents "+foobar!+")))
+    (unwind-protect
+         (mpi-sendreceive sendbuf partner
+                          recvbuf partner
+                          :send-start 1 :send-end 8
+                          :recv-start 2 :recv-end 9)
+      (is (string= "  foobar!  " recvbuf))
+      (free-static-vector recvbuf)
+      (free-static-vector sendbuf))))
 
 (test (mpi-broadcast :depends-on parallel)
   "Use mpi-broadcast to broadcast a single number."

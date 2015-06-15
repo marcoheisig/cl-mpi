@@ -53,13 +53,22 @@
   :components
   ((:module "mpi"
     :serial t
+    ;; Let me explain this long chain of serial dependencies: After the
+    ;; package declaration, "grovel.lisp" extracts all constants from mpi.h
+    ;; and the system MPI library is loaded via "cl-mpi-stub.c". The constants
+    ;; are then used in "configure.lisp" to set up MPI implementation
+    ;; dependent reader conditionals. "wraper"
     :components
     ((:file "packages")
-     (cffi-grovel:grovel-file "mpi-grovel")
-     (cl-mpi-system:mpi-library "cl-mpi-stub")
-     (:file "mpi-configure")
-     (:file "mpi-types")
-     (:file "mpi-variables")
-     (:file "mpi-bindings")
-     (:file "mpi")
-     (:file "mpi-extensions")))))
+     (cffi-grovel:grovel-file "grovel") ; extract all constants from "mpi.h"
+     (cl-mpi-system:mpi-library "cl-mpi-stub") ; load system MPI implementation
+     (:file "configure") ; MPI implementation dependent *features*
+     (:file "wrapper-types") ; CLOS wrappers for MPI handles
+     (:file "variables") ; Lisp-accessible variables from mpi.h
+     (:file "utilities")
+     (:file "datatypes")
+     (:file "collective")
+     (:file "contexts")
+     (:file "environment")
+     (:file "point-to-point")
+     (:file "extensions")))))
