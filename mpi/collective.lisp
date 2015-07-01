@@ -62,7 +62,7 @@ THE SOFTWARE.
 (defmpifun "MPI_Reduce" (*sendbuf *recvbuf count datatype op root comm) :introduced "1.0")
 (defmpifun "MPI_Reduce_local" (*inbuf *inoutbuf count datatype op))
 (defmpifun "MPI_Reduce_scatter" (*sendbuf *recvbuf recvcounts datatype op comm) :introduced "1.0")
-(defmpifun "MPI_Reduce_scatter_block" (*sendbuf *recvbuf recvcount datatype op comm))
+(defmpifun "MPI_Reduce_scatter_block" (*sendbuf *recvbuf recvcount datatype op comm) :introduced "2.2")
 (defmpifun "MPI_Scan" (*sendbuf *recvbuf count datatype op comm) :introduced "1.0")
 (defmpifun "MPI_Scatter" (*sendbuf sendcount sendtype *recvbuf recvcount recvtype root comm) :introduced "1.0")
 (defmpifun "MPI_Scatterv" (*sendbuf sendcounts displs sendtype *recvbuf recvcount recvtype root comm) :introduced "1.0")
@@ -73,10 +73,8 @@ THE SOFTWARE.
   call."
   (%mpi-barrier comm))
 
-(defun mpi-broadcast (array root &key
-                                   (start 0)
-                                   (end nil)
-                                   (comm *standard-communicator*))
+(defun mpi-broadcast (array root &key (comm *standard-communicator*)
+                                   start end)
   (declare (type simple-array array)
            (type (signed-byte 32) root)
            (type mpi-comm comm))
@@ -84,12 +82,9 @@ THE SOFTWARE.
       (static-vector-mpi-data array start end)
     (%mpi-bcast ptr count type root comm)))
 
-(defun mpi-allgather (send-array recv-array &key
-                                              (send-start 0)
-                                              (send-end nil)
-                                              (recv-start 0)
-                                              (recv-end nil)
-                                              (comm *standard-communicator*))
+(defun mpi-allgather (send-array recv-array &key (comm *standard-communicator*)
+                                              send-start send-end
+                                              recv-start recv-end)
   (declare (type simple-array send-array recv-array))
   (multiple-value-bind (sendbuf sendtype sendcount)
       (static-vector-mpi-data send-array send-start send-end)

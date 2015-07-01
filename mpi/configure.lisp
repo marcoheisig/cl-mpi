@@ -74,30 +74,34 @@
            ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls)))))))
 
 (defmacro defmpifun (foreign-name (&rest mpi-identifiers)
-                     &key
-                       documentation
-                       introduced
-                       deprecated
-                       removed)
+                     &key documentation introduced deprecated removed)
   (check-type foreign-name string)
   (let ((lisp-name
           (intern
            (concatenate 'string "%" (substitute #\- #\_ (string-upcase foreign-name)))
-           :mpi))
+           '#:cl-mpi))
         (args
           (loop for i in mpi-identifiers
                 collect (find i *mpi-naming-conventions* :test #'eq :key #'car)))
         (introducedp (version<= introduced +mpi-version+))
         (removedp (and removed (version<= removed +mpi-version+)))
         (deprecatedp (version<= deprecated +mpi-version+)))
-    (declare (ignorable deprecatedp)) ;; currently I do not handle deprecation
+     ;; Currently I do not handle deprecation - this is ok because as of June
+     ;; 2015 the MPI Committee also has no way to handle deprecation.
+    (declare (ignorable deprecatedp))
     (if documentation (push documentation args))
-    (if (and introducedp (not removedp))
-        `(progn
-           (defcfun (,foreign-name ,lisp-name) mpi-error-code ,@args))
-        `(progn
-           (defun ,lisp-name ,mpi-identifiers
-             (declare (ignore ,@mpi-identifiers))
-             (error "This function was ~:[introduced~;removed~] in MPI version
-                 ~:[~A~*~;~*~A~], while your MPI library is version ~A.~%"
-                    ,removedp ,removedp ,introduced ,removed +mpi-version+))))))
+    (cond
+      ((not introducedp)
+       `(defun ,lisp-name ,mpi-identifiers
+          (declare (ignore ,@mpi-identifiers))
+          (error
+           "This function is only available from MPI versions above ~A.~%"
+           ,introduced)))
+      (removedp
+       `(defun ,lisp-name ,mpi-identifiers
+          (declare (ignore ,@mpi-identifiers))
+          (error
+           "This function was removed in MPI version ~A.~%"
+           ,removed)))
+      (t
+       `(defcfun (,foreign-name ,lisp-name) mpi-error-code ,@args)))))

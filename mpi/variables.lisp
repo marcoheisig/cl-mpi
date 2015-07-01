@@ -86,7 +86,7 @@ THE SOFTWARE.
 (define-mpi-object mpi-op MPI_MAXLOC)
 (define-mpi-object mpi-op MPI_MINLOC)
 (define-mpi-object mpi-op MPI_REPLACE)
-#+openmpi (define-mpi-object mpi-op MPI_NO_OP)
+;; (define-mpi-object mpi-op MPI_NO_OP) ;; causing trouble in openmpi-1.6
 
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)

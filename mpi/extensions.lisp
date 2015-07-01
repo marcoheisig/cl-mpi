@@ -25,18 +25,16 @@ THE SOFTWARE.
 
 (in-package :mpi)
 
-(defun mpi-send-anything (object dest &key
-                                        (tag 0)
-                                        (comm *standard-communicator*))
+(defun mpi-send-anything (object dest &key (comm *standard-communicator*)
+                                        (tag 0))
   "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It can
   transmit any object to a matching MPI-RECEIVE-ANYTHING."
   (let ((buffer (conspack:encode object :stream :static)))
     (mpi-send buffer dest :tag tag :comm comm)
     (free-static-vector buffer)))
 
-(defun mpi-receive-anything (source &key
-                                      (tag +mpi-any-tag+)
-                                      (comm *standard-communicator*))
+(defun mpi-receive-anything (source &key (comm *standard-communicator*)
+                                      (tag +mpi-any-tag+))
   "MPI-RECEIVE-ANYTHING returns an object that was passed to a matching
   MPI-SEND-ANYTHING."
   (let* ((len (mpi-probe source))
@@ -45,9 +43,8 @@ THE SOFTWARE.
     (prog1 (conspack:decode buffer)
       (free-static-vector buffer))))
 
-(defun mpi-broadcast-anything (root &key
-                                      (comm *standard-communicator*)
-                                      (object))
+(defun mpi-broadcast-anything (root &key (comm *standard-communicator*)
+                                      object)
   "The node with rank ROOT sends the given object to every other rank in the
   communicator COMM."
   (cond

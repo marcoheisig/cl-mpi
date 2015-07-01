@@ -26,8 +26,6 @@ THE SOFTWARE.
 
 (in-package #:mpi)
 
-(declaim (inline %mpi-send %mpi-receive %mpi-barrier))
-
 (defmpifun "MPI_Bsend" (*buf count datatype dest tag comm) :introduced "1.0")
 (defmpifun "MPI_Bsend_init" (*buf count datatype dest tag comm *request) :introduced "1.0")
 (defmpifun "MPI_Buffer_attach" (*buf size) :introduced "1.0")
@@ -70,14 +68,11 @@ THE SOFTWARE.
 (defmpifun "MPI_Waitsome" (incount requests *outcount indices statuses))
 
 (defun mpi-sendreceive (send-data dest recv-data source
-                        &key
+                        &key (comm *standard-communicator*)
                           (send-tag 0)
                           (recv-tag +mpi-any-tag+)
-                          (send-start 0)
-                          (send-end nil)
-                          (recv-start 0)
-                          (recv-end nil)
-                          (comm *standard-communicator*))
+                          send-start send-end
+                          recv-start recv-end)
   (declare (type simple-array send-data recv-data)
            (type (signed-byte 32)
                  dest send-tag source  recv-tag))
@@ -90,11 +85,9 @@ THE SOFTWARE.
        recv-buf recv-count recv-type source recv-tag
        comm +mpi-status-ignore+))))
 
-(defun mpi-send (array dest &key
-                              (start 0)
-                              (end nil)
+(defun mpi-send (array dest &key (comm *standard-communicator*)
+                              start end
                               (tag 0)
-                              (comm *standard-communicator*)
                               (mode :basic))
   "Send a given ARRAY to a corresponding MPI-RECEIVE. The arrays passed to
 MPI-SEND and MPI-RECEIVE must be of type SIMPLE-ARRAY and have the same
@@ -114,11 +107,10 @@ sender and receiver side do not match."
         (static-vector-mpi-data array start end)
       (funcall send-function ptr count type dest tag comm))))
 
-(defun mpi-isend (array dest &key
-                               (start 0)
-                               (end nil)
+(defun mpi-isend (array dest &key (comm *standard-communicator*)
+                               start
+                               end
                                (tag 0)
-                               (comm *standard-communicator*)
                                (mode :basic))
   "A non-blocking variant of MPI-SEND. It returns immediately. To check
   whether the send operation is complete, use MPI-WAIT or MPI-TEST.
@@ -142,11 +134,9 @@ mechanism such as sb-sys:with-pinned-objects."
       (with-foreign-results ((request 'mpi-request))
         (funcall send-function ptr count type dest tag comm request)))))
 
-(defun mpi-receive (array source &key
-                                   (start 0)
-                                   (end nil)
-                                   (tag +mpi-any-tag+)
-                                   (comm *standard-communicator*))
+(defun mpi-receive (array source &key (comm *standard-communicator*)
+                                   start end
+                                   (tag +mpi-any-tag+))
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
            (type mpi-comm comm))

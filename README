@@ -38,10 +38,11 @@ cl-mpi has been tested with mpich2 and openmpi.
   Marco Heisig
 
 * Special Thanks
-  This project was partially funded by the KONWIHR (The Bavarian Competence
-  Network for Technical and Scientific High Performance Computing).
+  This project was funded by KONWIHR (The Bavarian Competence Network for
+  Technical and Scientific High Performance Computing) and the Chair for
+  Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
 
-  Another big thanks to Nicolas Neuss for all the useful suggestions.
+  Big thanks to Nicolas Neuss for all the useful suggestions.
 
 * TODOs (roughly in orde of priority)
 ** one-sided MPI 3.0 communications
