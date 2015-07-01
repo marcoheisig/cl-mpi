@@ -1,10 +1,10 @@
 (in-package :mpi-testsuite)
 (in-suite mpi-testsuite)
 
-(defun team-partner (&optional rank size)
+(defun team-partner ()
   "Group all processes in teams of two. Return the rank of the partner."
-  (let ((rank (or rank (mpi-comm-rank)))
-        (size (or size (mpi-comm-size))))
+  (let ((rank (mpi-comm-rank))
+        (size (mpi-comm-size)))
     (cond
       ((and (oddp size)
             (>= rank (- size 1)))
@@ -59,12 +59,11 @@
 
 (test (send-subsequence :depends-on mpi-sendreceive)
   "Send only a subsequence of an array"
-  (let* ((my-rank (mpi-comm-rank))
-        (partner (team-partner my-rank))
-        (recvbuf (make-static-vector 11 :element-type 'character
-                                        :initial-element #\SPACE))
-        (sendbuf (make-static-vector 9 :element-type 'character
-                                       :initial-contents "+foobar!+")))
+  (let* ((partner (team-partner))
+         (recvbuf (make-static-vector 11 :element-type 'character
+                                         :initial-element #\SPACE))
+         (sendbuf (make-static-vector 9 :element-type 'character
+                                        :initial-contents "+foobar!+")))
     (unwind-protect
          (mpi-sendreceive sendbuf partner
                           recvbuf partner
@@ -98,8 +97,30 @@
       (unwind-protect (mpi-allgather send-array recv-array)
         (is (loop for i below size
                   when (/= (aref recv-array i) i) do
-                       (return nil)
+                    (return nil)
                   finally
                      (return t)))
         (free-static-vector recv-array)
         (free-static-vector send-array)))))
+
+(test (nonblocking :depends-on parallel)
+  "Nonblocking communication with MPI-I[SEND,RECV], MPI-WAIT and
+MPI-WAITALL"
+  (let ((partner (team-partner))
+        (requests '()))
+    (with-static-vector (recvbuf 3 :element-type '(unsigned-byte 32)
+                                   :initial-element 0)
+      (with-static-vector (sendbuf 3 :element-type '(unsigned-byte 32)
+                                     :initial-element 1)
+        (push (mpi-isend sendbuf partner) requests)
+        (push (mpi-ireceive recvbuf partner) requests)
+        (apply #'mpi-waitall requests)
+        (is (equalp recvbuf #(1 1 1)))
+        (setq requests '()))
+      (with-static-vector (sendbuf 3 :element-type '(unsigned-byte 32)
+                                     :initial-element 2)
+        (push (mpi-isend sendbuf partner) requests)
+        (push (mpi-ireceive recvbuf partner) requests)
+        (mapc #'mpi-wait requests)
+        (is (equalp recvbuf #(2 2 2)))
+        (setq requests '())))))

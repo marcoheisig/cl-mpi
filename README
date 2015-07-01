@@ -75,6 +75,7 @@ cl-mpi has been tested with mpich2 and openmpi.
 ** MPI extensions
    - coarrays
    - checkpointing
+   - allow different serialization tools, like cl-store
 ** testsuite improvements
    - one test per function
    - failure of individual ranks should be propagated to all ranks so that it

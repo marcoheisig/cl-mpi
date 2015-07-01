@@ -141,8 +141,20 @@ mechanism such as sb-sys:with-pinned-objects."
            (type (signed-byte 32) source tag)
            (type mpi-comm comm))
   (multiple-value-bind (ptr type count)
-      (static-vector-mpi-data array start end) ;; TODO check the mpi-status
+      (static-vector-mpi-data array start end)
+    ;; TODO check the mpi-status
     (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
+
+(defun mpi-ireceive (array source &key (comm *standard-communicator*)
+                                    start end
+                                    (tag +mpi-any-tag+))
+  (declare (type simple-array array)
+           (type (signed-byte 32) source tag)
+           (type mpi-comm comm))
+  (multiple-value-bind (ptr type count)
+      (static-vector-mpi-data array start end)
+    (with-foreign-results ((request 'mpi-request))
+      (%mpi-irecv ptr count type source tag comm request))))
 
 (defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
@@ -154,3 +166,26 @@ mechanism such as sb-sys:with-pinned-objects."
        (with-foreign-results ((count :int))
          (%mpi-get-count status +mpi-byte+ count))
        mpi-tag))))
+
+(defun mpi-wait (request)
+  (with-foreign-objects ((status* '(:struct mpi-status))
+                         (request* 'mpi-request))
+    (setf (mem-ref request* 'mpi-request) request)
+    (%mpi-wait request* status*)
+    (setf (slot-value request '%handle)
+          (mem-ref request* 'mpi-request))))
+
+(defun mpi-waitall (&rest requests)
+  (let ((n-requests (length requests)))
+    (with-foreign-objects ((requests* 'mpi-request n-requests)
+                           (statuses* '(:struct mpi-status) n-requests))
+      (loop for request in requests
+            and i below n-requests do
+              (setf (mem-aref requests* 'mpi-request i) request))
+      (%mpi-waitall n-requests requests* statuses*)
+      (loop for request in requests
+            and i below n-requests do
+              (setf (slot-value request '%handle)
+                    (mem-aref requests* 'mpi-request i))))))
+
+;; TODO make GC free MPI_Request handles

@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package :mpi)
+(in-package #:mpi)
 
 ;;; A.2.4 Groups, Contexts, Communicators, and Caching C Bindings
 
@@ -89,11 +89,8 @@ THE SOFTWARE.
 ;; (defmpifun "MPI_Win_set_name")
 
 (defun mpi-comm-group (&optional (comm *standard-communicator*))
-  (make-instance
-   'mpi-group
-   :foreign-object
-   (with-foreign-results ((newgroup 'mpi-group))
-     (%mpi-comm-group comm newgroup))))
+  (with-foreign-results ((newgroup 'mpi-group))
+    (%mpi-comm-group comm newgroup)))
 
 (defun mpi-group-size (group)
   (with-foreign-results ((size :int))
@@ -152,32 +149,26 @@ THE SOFTWARE.
  group. A valid range can be
   - an integer
   - a list of the form (first-rank last-rank &optional step-size)"
-  (make-instance
-   'mpi-group
-   :foreign-object
-   (with-foreign-results ((newgroup 'mpi-group))
-     (with-mpi-rank-spec (spec count) (rank-spec)
-       (%mpi-group-range-incl group count spec newgroup)))))
+  (with-foreign-results ((newgroup 'mpi-group))
+    (with-mpi-rank-spec (spec count) (rank-spec)
+      (%mpi-group-range-incl group count spec newgroup))))
 
 (defun mpi-group-excl (group &rest rank-spec)
   "Create a new MPI group consisting of a subset of the ranks of the original
  group. A valid range can be
   - an integer
   - a list of the form (first-rank last-rank &optional step-size)"
-  (make-instance
-   'mpi-group
-   :foreign-object
-   (with-foreign-results ((newgroup 'mpi-group))
-     (with-mpi-rank-spec (spec count) (rank-spec)
-       (%mpi-group-range-excl group count spec newgroup)))))
+  (with-foreign-results ((newgroup 'mpi-group))
+    (with-mpi-rank-spec (spec count) (rank-spec)
+      (%mpi-group-range-excl group count spec newgroup))))
 
 (defun mpi-group-free (&rest groups)
-  (loop for group in groups do
-    (let ((ptr (foreign-alloc 'mpi-group
-                              :initial-element (slot-value group 'foreign-object))))
-      (%mpi-group-free ptr)
-      (setf (slot-value group 'foreign-object)
-            (mem-ref ptr 'mpi-group)))))
+  (let ((handle (foreign-alloc 'mpi-group)))
+    (loop for group in groups do
+      (setf (mem-ref handle 'mpi-group) group)
+      (%mpi-group-free handle)
+      (setf (slot-value group '%handle)
+            (mem-ref handle 'mpi-group)))))
 
 (defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For
@@ -191,15 +182,9 @@ THE SOFTWARE.
     (%mpi-comm-rank comm rank)))
 
 (defun mpi-comm-create (group &key (comm *standard-communicator*))
-  (make-instance
-   'mpi-comm
-   :foreign-object
-   (with-foreign-results ((newcomm 'mpi-comm))
-     (%mpi-comm-create comm group newcomm))))
+  (with-foreign-results ((newcomm 'mpi-comm))
+    (%mpi-comm-create comm group newcomm)))
 
 (defun mpi-comm-dup (&optional (comm *standard-communicator*))
-  (make-instance
-   'mpi-comm
-   :foreign-object
-   (with-foreign-results ((newcomm 'mpi-comm))
-     (%mpi-comm-dup comm newcomm))))
+  (with-foreign-results ((newcomm 'mpi-comm))
+    (%mpi-comm-dup comm newcomm)))

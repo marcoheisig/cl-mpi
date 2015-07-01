@@ -26,37 +26,61 @@ THE SOFTWARE.
 
 (in-package :cl-mpi)
 
+(define-condition mpi-error-condition (error)
+  ((error-code :initarg :error-code :reader error-code))
+  (:report
+   (lambda (c stream)
+     (princ (mpi-error-string (error-code c))
+            stream)))
+  (:documentation "Signalled when a MPI function returns a code other than MPI_SUCCESS."))
+
+(defun signal-mpi-error (value)
+  (restart-case
+      (error 'mpi-error-condition :error-code value)
+    (ignore () nil)))
+
 (define-foreign-type mpi-object-type ()
+  () (:actual-type
+      #+openmpi :pointer
+      #-openmpi :int))
+
+(define-foreign-type mpi-errhandler-type (mpi-object-type)
+  () (:simple-parser mpi-errhandler))
+
+(define-foreign-type mpi-comm-type (mpi-object-type)
+  () (:simple-parser mpi-comm))
+
+(define-foreign-type mpi-group-type (mpi-object-type)
+  () (:simple-parser mpi-group))
+
+(define-foreign-type mpi-datatype-type (mpi-object-type)
+  () (:simple-parser mpi-datatype))
+
+(define-foreign-type mpi-op-type (mpi-object-type)
+  () (:simple-parser mpi-op))
+
+(define-foreign-type mpi-info-type (mpi-object-type)
+  () (:simple-parser mpi-info))
+
+(define-foreign-type mpi-message-type (mpi-object-type)
+  () (:simple-parser mpi-message))
+
+(define-foreign-type mpi-request-type (mpi-object-type)
+  () (:simple-parser mpi-request))
+
+(define-foreign-type mpi-error-type ()
   ()
-  (:actual-type
-   #+openmpi :pointer #-openmpi :int))
-
-(defmacro define-mpi-type (name)
-  (let ((typename
-          (intern
-           (concatenate 'string (string-upcase (symbol-name name)) "-TYPE")
-           :mpi)))
-    `(define-foreign-type ,typename (mpi-object-type)
-       ()
-       (:simple-parser ,name))))
-
-(define-mpi-type mpi-errhandler)
-(define-mpi-type mpi-comm)
-(define-mpi-type mpi-group)
-(define-mpi-type mpi-datatype)
-(define-mpi-type mpi-op)
-(define-mpi-type mpi-info)
-(define-mpi-type mpi-message)
-(define-mpi-type mpi-request)
+  (:actual-type :int)
+  (:simple-parser mpi-error-code))
 
 (defclass mpi-object ()
   ((name :type string
          :reader name
          :initarg :name
          :initform "")
-   (foreign-object
-    :reader foreign-object
-    :initarg :foreign-object
+   (%handle
+    :reader mpi-object-handle
+    :initarg :handle
     :type
     #+openmpi foreign-pointer
     #-openmpi (signed-byte 32))))
@@ -69,30 +93,11 @@ THE SOFTWARE.
 (defclass mpi-info (mpi-object) ())
 (defclass mpi-request (mpi-object) ())
 
-(defmethod make-load-form ((object mpi-object) &optional env)
-  (declare (ignore env))
-  `(make-instance ',(class-of object)
-                  :name ,(name object)))
-
-(defmacro define-mpi-object-expander (type foreign-type)
-  `(defmethod expand-to-foreign (value (type ,foreign-type))
-     `(progn
-        (check-type ,value ,',type)
-        (foreign-object ,value))))
-
-(define-mpi-object-expander mpi-errhandler mpi-errhandler-type)
-(define-mpi-object-expander mpi-comm mpi-comm-type)
-(define-mpi-object-expander mpi-group mpi-group-type)
-(define-mpi-object-expander mpi-datatype mpi-datatype-type)
-(define-mpi-object-expander mpi-op mpi-op-type)
-(define-mpi-object-expander mpi-info mpi-info-type)
-(define-mpi-object-expander mpi-request mpi-request-type)
-
-;;; if foreign-object is not given it is derived from the given name. An
+;;; if %handle is not given it is derived from the name of the object. An
 ;;; error is signalled if such a symbol is not found
 (defmethod initialize-instance :after ((object mpi-object) &rest args)
   (declare (ignore args))
-  (unless (slot-boundp object 'foreign-object)
+  (unless (slot-boundp object '%handle)
     #+openmpi
     (let* ((openmpi-name
              (concatenate
@@ -103,43 +108,44 @@ THE SOFTWARE.
               (string-downcase (name object))))
            (handle (foreign-symbol-pointer openmpi-name)))
       (if handle
-          (setf (slot-value object 'foreign-object) handle)
+          (setf (slot-value object '%handle) handle)
           (error "MPI symbol ~A could not be found" openmpi-name)))
     #-openmpi
-    (setf (slot-value object 'foreign-object)
+    (setf (slot-value object '%handle)
           (let ((symbol-name
                   (concatenate 'string "MPI_" (name object))))
             (symbol-value (find-symbol symbol-name :mpi-header))))))
 
-(define-foreign-type mpi-error-type ()
-  ()
-  (:actual-type :int)
-  (:simple-parser mpi-error-code))
+(defmethod make-load-form ((object mpi-object) &optional env)
+  (declare (ignore env))
+  `(make-instance ',(class-of object)
+                  :name ,(name object)))
 
-(define-condition mpi-error-condition (error)
-  ((error-code :initarg :error-code :reader error-code))
-  (:report
-   (lambda (c stream)
-     (princ (mpi-error-string (error-code c))
-            stream)))
-  (:documentation "Signalled when a MPI function returns a code other than MPI_SUCCESS."))
+(defmethod expand-to-foreign (value (type mpi-object-type))
+  `(mpi-object-handle ,value))
 
-(defun signal-mpi-error (value)
-  "Raise a MPI-CODE-ERROR if VALUE, a mpi-code, is non-zero."
-  (restart-case
-      (error 'mpi-error-condition :error-code value)
-    (ignore () nil)))
-
-;;; have each function that returns objects of mpi-error-type signal an
-;;; appropriate error condition if the error-code is not zero.
 (defmethod expand-from-foreign (value (type mpi-error-type))
   (let ((return-value (gensym)))
     `(let ((,return-value ,value))
        (unless (zerop ,return-value)
          (signal-mpi-error ,return-value)))))
 
+(defmethod expand-from-foreign (value (type mpi-object-type))
+  (let ((instance-type
+          (etypecase type
+            (mpi-errhandler-type 'mpi-errhandler)
+            (mpi-comm-type 'mpi-comm)
+            (mpi-group-type 'mpi-group)
+            (mpi-datatype-type 'mpi-datatype)
+            (mpi-op-type 'mpi-op)
+            (mpi-info-type 'mpi-info)
+            (mpi-request-type 'mpi-request))))
+    `(make-instance
+      ',instance-type
+      :handle ,value)))
+
 (defun mpi-object= (a b)
-  (pointer-eq (foreign-object a)
-              (foreign-object b)))
+  (pointer-eq (mpi-object-handle a)
+              (mpi-object-handle b)))
 
 

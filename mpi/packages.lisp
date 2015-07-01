@@ -80,10 +80,14 @@
    #:mpi-wtick
    #:mpi-abort
    #:mpi-send
+   #:mpi-isend
    #:mpi-receive
+   #:mpi-ireceive
    #:mpi-sendreceive
    #:mpi-broadcast
    #:mpi-allgather
+   #:mpi-wait
+   #:mpi-waitall
 
    ;; extensions
    #:mpi-send-anything
