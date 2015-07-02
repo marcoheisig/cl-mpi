@@ -5,18 +5,37 @@
   (:use #:cl #:cffi #:static-vectors #:alexandria)
   (:import-from #:uiop #:version<=)
   (:export
-
-   ;; constants and handles
-   #:+mpi-any-source+
+   ;; configure.lisp
+   #:+mpi-version
+   #:+mpi-max-error-string+
    #:+mpi-any-tag+
-   #:+mpi-status-ignore+
+   #:+mpi-any-source+
    #:+mpi-proc-null+
    #:+mpi-root+
    #:+mpi-undefined+
-   #:+mpi-comm-world+ ; communicators
+   #:+mpi-status-ignore+
+
+   ;; wrapper types
+   #:mpi-error-condition
+   #:mpi-object
+   #:mpi-errhandler
+   #:mpi-comm
+   #:mpi-group
+   #:mpi-datatype
+   #:mpi-op
+   #:mpi-info
+   #:mpi-request
+   #:mpi-object=
+
+   ;; variables.lisp
+   #:+mpi-errors-return+
+   #:+mpi-errors-are-fatal+
+   #:+mpi-group-empty+
+   #:+mpi-group-null+
+   #:+mpi-comm-world+
    #:+mpi-comm-self+
    #:+mpi-comm-null+
-   #:+mpi-datatype-null+ ; data types
+   #:+mpi-datatype-null+
    #:+mpi-lb+
    #:+mpi-ub+
    #:+mpi-char+
@@ -35,8 +54,17 @@
    #:+mpi-double+
    #:+mpi-long-double+
    #:+mpi-wchar+
+   #:+mpi-c-bool+
+   #:+mpi-int8-t+
+   #:+mpi-int16-t+
+   #:+mpi-int32-t+
+   #:+mpi-int64-t+
+   #:+mpi-uint8-t+
+   #:+mpi-uint16-t+
+   #:+mpi-uint32-t+
+   #:+mpi-uint64-t+
    #:+mpi-packed+
-   #:+mpi-null+ ; operators
+   #:+mpi-null+
    #:+mpi-min+
    #:+mpi-max+
    #:+mpi-sum+
@@ -50,47 +78,57 @@
    #:+mpi-maxloc+
    #:+mpi-minloc+
    #:+mpi-replace+
-   #:+mpi-no-op+
+   #:+mpi-request-null+
    #:*standard-communicator*
+   #:mpi-null-p
 
-    ;; lisp objects
-   #:mpi_status
-   #:mpi-errhandler
-   #:mpi-comm
-   #:mpi-group
-   #:mpi-op
-   #:mpi-datatype
-   #:mpi-object=
+   ;; datatypes.lisp
+   #:mpi-type-size
 
-   ;; functions
-   #:mpi-init
-   #:mpi-initialized
-   #:mpi-finalize
-   #:mpi-comm-rank
-   #:mpi-comm-size
+   ;; collective.lisp
+   #:mpi-barrier
+   #:mpi-broadcast
+   #:mpi-allgather
+
+   ;; contexts.lisp
    #:mpi-comm-group
-   #:mpi-comm-dup
    #:mpi-group-size
+   #:mpi-group-rank
+   #:mpi-group-union
+   #:mpi-group-intersection
+   #:mpi-group-difference
    #:mpi-group-incl
    #:mpi-group-excl
    #:mpi-group-free
-   #:mpi-get-processor-name
-   #:mpi-barrier
+   #:mpi-comm-size
+   #:mpi-comm-rank
+   #:mpi-comm-create
+   #:mpi-comm-dup
+
+   ;; environment.lisp
    #:mpi-wtime
    #:mpi-wtick
+   #:mpi-finalize
+   #:mpi-init
+   #:mpi-initialized
+   #:mpi-finalized
    #:mpi-abort
+   #:mpi-get-processor-name
+   #:mpi-error-string
+
+   ;; point-to-point.lisp
+   #:mpi-sendrecv
    #:mpi-send
    #:mpi-isend
-   #:mpi-receive
-   #:mpi-ireceive
-   #:mpi-sendreceive
-   #:mpi-broadcast
-   #:mpi-allgather
+   #:mpi-recv
+   #:mpi-irecv
+   #:mpi-probe
    #:mpi-wait
    #:mpi-waitall
-   #:mpi-null-p
 
-   ;; extensions
+   ;; one-sided.lisp
+
+   ;; extensions.lisp
    #:mpi-send-anything
    #:mpi-receive-anything
    #:mpi-broadcast-anything))

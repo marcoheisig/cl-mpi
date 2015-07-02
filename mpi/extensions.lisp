@@ -39,7 +39,7 @@ THE SOFTWARE.
   MPI-SEND-ANYTHING."
   (let* ((len (mpi-probe source))
          (buffer (make-static-vector len :element-type '(unsigned-byte 8))))
-    (mpi-receive buffer source :tag tag :comm comm)
+    (mpi-recv buffer source :tag tag :comm comm)
     (prog1 (conspack:decode buffer)
       (free-static-vector buffer))))
 

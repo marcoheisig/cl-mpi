@@ -27,16 +27,16 @@
       (unwind-protect
            (cond ((= 0 rank)
                   (mpi-send message right-neighbor)
-                  (mpi-receive buffer left-neighbor)
+                  (mpi-recv buffer left-neighbor)
                   (is (string= "foobar!" buffer)))
                  (t
-                  (mpi-receive buffer left-neighbor)
+                  (mpi-recv buffer left-neighbor)
                   (mpi-send buffer right-neighbor)))
         (free-static-vector buffer)
         (free-static-vector message)))))
 
-(test (mpi-sendreceive :depends-on parallel)
-  "Send a Common Lisp datastructure through all nodes using mpi-sendreceive."
+(test (mpi-sendrecv :depends-on parallel)
+  "Send a Common Lisp datastructure through all nodes using mpi-sendrecv."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
     (let ((left-neighbor  (mod (- rank 1) size))
@@ -49,15 +49,15 @@
                                               :initial-element rank)))
       (unwind-protect
            (progn
-             (mpi-sendreceive my-buffer right-neighbor left-buffer left-neighbor)
-             (mpi-sendreceive my-buffer left-neighbor right-buffer right-neighbor))
+             (mpi-sendrecv my-buffer right-neighbor left-buffer left-neighbor)
+             (mpi-sendrecv my-buffer left-neighbor right-buffer right-neighbor))
         (is (= (aref left-buffer 0) left-neighbor))
         (is (= (aref right-buffer 0) right-neighbor))
         (free-static-vector left-buffer)
         (free-static-vector right-buffer)
         (free-static-vector my-buffer)))))
 
-(test (send-subsequence :depends-on mpi-sendreceive)
+(test (send-subsequence :depends-on mpi-sendrecv)
   "Send only a subsequence of an array"
   (let* ((partner (team-partner))
          (recvbuf (make-static-vector 11 :element-type 'character
@@ -65,7 +65,7 @@
          (sendbuf (make-static-vector 9 :element-type 'character
                                         :initial-contents "+foobar!+")))
     (unwind-protect
-         (mpi-sendreceive sendbuf partner
+         (mpi-sendrecv sendbuf partner
                           recvbuf partner
                           :send-start 1 :send-end 8
                           :recv-start 2 :recv-end 9)
@@ -112,18 +112,18 @@ MPI-WAITALL"
       (with-static-vector (sendbuf 3 :element-type '(unsigned-byte 32)
                                      :initial-element 1)
         (mpi-waitall (mpi-isend sendbuf partner)
-                     (mpi-ireceive recvbuf partner))
+                     (mpi-irecv recvbuf partner))
         (is (equalp recvbuf #(1 1 1))))
       (with-static-vector (sendbuf 3 :element-type '(unsigned-byte 32)
                                      :initial-element 2)
         (mapc #'mpi-wait
               (list (mpi-isend sendbuf partner)
-                    (mpi-ireceive recvbuf partner)))
+                    (mpi-irecv recvbuf partner)))
         (is (equalp recvbuf #(2 2 2))))
       (with-static-vector (sendbuf 3 :element-type '(unsigned-byte 32)
                                      :initial-element 3)
         (let ((requests (list (mpi-isend sendbuf partner)
-                              (mpi-ireceive recvbuf partner))))
+                              (mpi-irecv recvbuf partner))))
           (is (not (some #'mpi-null-p requests)))
           (mapc #'mpi-wait requests)
           (is (every #'mpi-null-p requests))

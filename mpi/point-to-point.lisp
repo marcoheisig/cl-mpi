@@ -67,12 +67,12 @@ THE SOFTWARE.
 (defmpifun "MPI_Waitany" (count requests *index *status) :introduced "1.0")
 (defmpifun "MPI_Waitsome" (incount requests *outcount indices statuses))
 
-(defun mpi-sendreceive (send-data dest recv-data source
-                        &key (comm *standard-communicator*)
-                          (send-tag 0)
-                          (recv-tag +mpi-any-tag+)
-                          send-start send-end
-                          recv-start recv-end)
+(defun mpi-sendrecv (send-data dest recv-data source
+                     &key (comm *standard-communicator*)
+                       (send-tag 0)
+                       (recv-tag +mpi-any-tag+)
+                       send-start send-end
+                       recv-start recv-end)
   (declare (type simple-array send-data recv-data)
            (type (signed-byte 32)
                  dest send-tag source  recv-tag))
@@ -89,8 +89,8 @@ THE SOFTWARE.
                               start end
                               (tag 0)
                               (mode :basic))
-  "Send a given ARRAY to a corresponding MPI-RECEIVE. The arrays passed to
-MPI-SEND and MPI-RECEIVE must be of type SIMPLE-ARRAY and have the same
+  "Send a given ARRAY to a corresponding MPI-RECV. The arrays passed to
+MPI-SEND and MPI-RECV must be of type SIMPLE-ARRAY and have the same
 element-type and dimensions. Undefined behaviour occurs if the arrays at
 sender and receiver side do not match."
   (declare (type simple-array array)
@@ -134,9 +134,9 @@ mechanism such as sb-sys:with-pinned-objects."
       (with-foreign-results ((request 'mpi-request))
         (funcall send-function ptr count type dest tag comm request)))))
 
-(defun mpi-receive (array source &key (comm *standard-communicator*)
-                                   start end
-                                   (tag +mpi-any-tag+))
+(defun mpi-recv (array source &key (comm *standard-communicator*)
+                                start end
+                                (tag +mpi-any-tag+))
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
            (type mpi-comm comm))
@@ -145,9 +145,9 @@ mechanism such as sb-sys:with-pinned-objects."
     ;; TODO check the mpi-status
     (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
 
-(defun mpi-ireceive (array source &key (comm *standard-communicator*)
-                                    start end
-                                    (tag +mpi-any-tag+))
+(defun mpi-irecv (array source &key (comm *standard-communicator*)
+                                 start end
+                                 (tag +mpi-any-tag+))
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
            (type mpi-comm comm))
