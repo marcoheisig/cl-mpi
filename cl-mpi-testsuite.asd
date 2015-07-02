@@ -4,8 +4,7 @@
   :depends-on (#:cl-mpi #:fiveam #:cffi)
   :perform (test-op (o s)
                     (uiop:symbol-call
-                     '#:fiveam  '#:run!
-                     (uiop:find-symbol* '#:mpi-testsuite '#:mpi-testsuite)))
+                     '#:mpi-testsuite '#:run-cl-mpi-testsuite))
   :serial t
   :components
   ((:module "mpi-testsuite"

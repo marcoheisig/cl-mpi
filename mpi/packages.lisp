@@ -88,6 +88,7 @@
    #:mpi-allgather
    #:mpi-wait
    #:mpi-waitall
+   #:mpi-null-p
 
    ;; extensions
    #:mpi-send-anything

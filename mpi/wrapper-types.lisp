@@ -24,7 +24,7 @@ THE SOFTWARE.
 |#
 
 
-(in-package :cl-mpi)
+(in-package #:cl-mpi)
 
 (define-condition mpi-error-condition (error)
   ((error-code :initarg :error-code :reader error-code))
@@ -102,9 +102,10 @@ THE SOFTWARE.
     (let* ((openmpi-name
              (concatenate
               'string
-              (if (typep object 'mpi-op)
-                  "ompi_mpi_op_"
-                  "ompi_mpi_")
+              (typecase object
+                (mpi-request "ompi_")
+                (mpi-op "ompi_mpi_op_")
+                (t "ompi_mpi_"))
               (string-downcase (name object))))
            (handle (foreign-symbol-pointer openmpi-name)))
       (if handle
@@ -112,9 +113,10 @@ THE SOFTWARE.
           (error "MPI symbol ~A could not be found" openmpi-name)))
     #-openmpi
     (setf (slot-value object '%handle)
-          (let ((symbol-name
-                  (concatenate 'string "MPI_" (name object))))
-            (symbol-value (find-symbol symbol-name :mpi-header))))))
+          (symbol-value
+           (find-symbol
+            (concatenate 'string "MPI_" (name object))
+            '#:mpi-header)))))
 
 (defmethod make-load-form ((object mpi-object) &optional env)
   (declare (ignore env))

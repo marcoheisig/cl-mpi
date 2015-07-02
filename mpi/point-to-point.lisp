@@ -173,7 +173,8 @@ mechanism such as sb-sys:with-pinned-objects."
     (setf (mem-ref request* 'mpi-request) request)
     (%mpi-wait request* status*)
     (setf (slot-value request '%handle)
-          (mem-ref request* 'mpi-request))))
+          (mpi-object-handle
+           (mem-ref request* 'mpi-request)))))
 
 (defun mpi-waitall (&rest requests)
   (let ((n-requests (length requests)))
@@ -186,6 +187,7 @@ mechanism such as sb-sys:with-pinned-objects."
       (loop for request in requests
             and i below n-requests do
               (setf (slot-value request '%handle)
-                    (mem-aref requests* 'mpi-request i))))))
+                    (mpi-object-handle
+                     (mem-aref requests* 'mpi-request i)))))))
 
 ;; TODO make GC free MPI_Request handles
