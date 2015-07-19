@@ -100,4 +100,4 @@ THE SOFTWARE.
      (mpi-group +mpi-group-null+)
      (mpi-datatype +mpi-datatype-null+)
      (mpi-request +mpi-request-null+)
-     (t +mpi-null+))))
+     (t nil))))

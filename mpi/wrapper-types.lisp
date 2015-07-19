@@ -147,7 +147,11 @@ THE SOFTWARE.
       :handle ,value)))
 
 (defun mpi-object= (a b)
+  #+openmpi
   (pointer-eq (mpi-object-handle a)
-              (mpi-object-handle b)))
+              (mpi-object-handle b))
+  #-openmpi
+  (eql (mpi-object-handle a)
+       (mpi-object-handle b)))
 
 
