@@ -60,13 +60,7 @@ be 0.001")
 ;; (defmpifun "MPI_File_create_errhandler")
 ;; (defmpifun "MPI_File_get_errhandler")
 ;; (defmpifun "MPI_File_set_errhandler")
-
-(defcfun "MPI_Finalize" mpi-error-code
-  "This routines cleans up all MPI state. Once this routine is called, no
-MPI routine (even MPI-INIT) may be called. The user must ensure that all
-pending communications involving a process complete before the process calls
-MPI-FINALIZE.")
-
+(defmpifun "MPI_Finalize" ())
 (defmpifun "MPI_Finalized" (*flag))
 ;; (defmpifun "MPI_Free_mem")
 ;; (defmpifun "MPI_Get_library_version")
@@ -88,6 +82,14 @@ subsequent calls have no effect."
     ;; not the Lisp way of doing things. The following call makes error
     ;; non-fatal in most cases.
     (%mpi-comm-set-errhandler +mpi-comm-world+ +mpi-errors-return+)))
+
+(defun mpi-finalize ()
+   "This routines cleans up all MPI state. Once this routine is called, no MPI
+routine (even MPI-INIT) may be called. The user must ensure that all pending
+communications involving a process complete before the process calls
+MPI-FINALIZE."
+  (when (mpi-initialized)
+    (%mpi-finalize)))
 
 (defun mpi-initialized ()
   "Returns true if MPI_INIT has been called and nil otherwise.

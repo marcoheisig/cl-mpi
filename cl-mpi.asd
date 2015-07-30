@@ -1,7 +1,11 @@
 (in-package #:asdf-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (asdf:load-system 'cffi-grovel))
+ (locally
+    (declare #+sbcl(sb-ext:muffle-conditions sb-kernel:redefinition-warning))
+  (handler-bind
+      (#+sbcl(sb-kernel:redefinition-warning #'muffle-warning))
+    (asdf:load-system 'cffi-grovel))))
 
 (defpackage #:cl-mpi-system
   (:use #:asdf #:cl)
