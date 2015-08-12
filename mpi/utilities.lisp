@@ -153,7 +153,8 @@ corresponding mpi-type and length.
 
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
-  (declare (type (simple-array * (*)) vector))
+  (declare (type (simple-array * (*)) vector)
+           (type (or (integer 0) null) start end))
   (let* ((n-bits (bits-per-element vector))
          (mpi-datatype
            (ecase n-bits

@@ -77,31 +77,28 @@
   "Use mpi-broadcast to broadcast a single number."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
-    (let ((buffer (make-static-vector 1 :element-type 'double-float))
-          (root (- size 1))
-          (message (coerce pi 'double-float)))
-      (if (= rank root)
-          (setf (aref buffer 0) message))
-      (unwind-protect (mpi-broadcast buffer root)
-        (is (= (aref buffer 0) message))
-        (free-static-vector buffer)))))
+    (with-static-vector (buffer 1 :element-type 'double-float)
+      (let ((root (- size 1))
+            (message (coerce pi 'double-float)))
+        (if (= rank root)
+            (setf (aref buffer 0) message))
+        (mpi-broadcast buffer root)
+        (is (= (aref buffer 0) message))))))
 
 (test (mpi-allgather :depends-on parallel)
   "Use mpi-allgather to generate a vector of all ranks."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
-    (let ((recv-array (make-static-vector size :element-type '(signed-byte 32)
-                                               :initial-element 0))
-          (send-array (make-static-vector 1 :element-type '(signed-byte 32)
-                                            :initial-element rank)))
-      (unwind-protect (mpi-allgather send-array recv-array)
+    (with-static-vector (recv-array size :element-type '(signed-byte 32)
+                                         :initial-element 0)
+      (with-static-vector (send-array 1 :element-type '(signed-byte 32)
+                                        :initial-element rank)
+        (mpi-allgather send-array recv-array)
         (is (loop for i below size
                   when (/= (aref recv-array i) i) do
                     (return nil)
                   finally
-                     (return t)))
-        (free-static-vector recv-array)
-        (free-static-vector send-array)))))
+                     (return t)))))))
 
 (test (nonblocking :depends-on parallel)
   "Nonblocking communication with MPI-I[SEND,RECV], MPI-WAIT and
@@ -128,3 +125,13 @@ MPI-WAITALL"
           (mapc #'mpi-wait requests)
           (is (every #'mpi-null-p requests))
           (is (equalp recvbuf #(3 3 3))))))))
+
+(test (mpi-allreduce :depends-on parallel)
+      "Perform different reductions with MPI-Allreduce."
+      (let ((size (mpi-comm-size)))
+        (with-static-vector (source 3 :element-type '(unsigned-byte 64)
+                                      :initial-element 1)
+          (with-static-vector (dest 3 :element-type '(unsigned-byte 64)
+                                      :initial-element 0)
+            (mpi-allreduce source dest +mpi-sum+)
+            (is (every (lambda (x) (= x size)) dest))))))

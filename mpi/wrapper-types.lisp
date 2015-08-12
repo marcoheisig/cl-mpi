@@ -79,7 +79,7 @@ THE SOFTWARE.
          :initarg :name
          :initform "")
    (%handle
-    :reader mpi-object-handle
+    :accessor mpi-object-handle
     :initarg :handle
     :type
     #+openmpi foreign-pointer

@@ -167,8 +167,9 @@ THE SOFTWARE.
     (loop for group in groups do
       (setf (mem-ref handle 'mpi-group) group)
       (%mpi-group-free handle)
-      (setf (slot-value group '%handle)
-            (mem-ref handle 'mpi-group)))))
+      (setf (mpi-object-handle group)
+            (mem-ref handle #+openmpi :pointer
+                            #-openmpi :int)))))
 
 (defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For

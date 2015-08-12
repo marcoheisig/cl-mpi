@@ -89,6 +89,7 @@
    #:mpi-barrier
    #:mpi-broadcast
    #:mpi-allgather
+   #:mpi-allreduce
 
    ;; contexts.lisp
    #:mpi-comm-group

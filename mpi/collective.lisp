@@ -93,3 +93,15 @@ THE SOFTWARE.
       (declare (ignore recvcount))
       (%mpi-allgather sendbuf sendcount sendtype
                       recvbuf sendcount recvtype comm))))
+
+
+(defun mpi-allreduce (send-array recv-array op &key (comm *standard-communicator*)
+                                                 send-start send-end
+                                                 recv-start recv-end)
+  (multiple-value-bind (sendbuf sendtype sendcount)
+      (static-vector-mpi-data send-array send-start send-end)
+    (multiple-value-bind (recvbuf recvtype recvcount)
+        (static-vector-mpi-data recv-array recv-start recv-end)
+      (assert (= recvcount sendcount))
+      (assert (eq recvtype sendtype))
+      (%mpi-allreduce sendbuf recvbuf sendcount sendtype op comm))))
