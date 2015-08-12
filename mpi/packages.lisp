@@ -90,6 +90,7 @@
    #:mpi-broadcast
    #:mpi-allgather
    #:mpi-allreduce
+   #:mpi-reduce
 
    ;; contexts.lisp
    #:mpi-comm-group

@@ -133,5 +133,26 @@ MPI-WAITALL"
                                       :initial-element 1)
           (with-static-vector (dest 3 :element-type '(unsigned-byte 64)
                                       :initial-element 0)
+            (mpi-allreduce source dest +mpi-prod+)
+            (is (every (lambda (x) (= x 1)) dest))
             (mpi-allreduce source dest +mpi-sum+)
             (is (every (lambda (x) (= x size)) dest))))))
+
+(test (mpi-reduce :depends-on mpi-broadcast)
+  "Perform different reductions with MPI-Reduce"
+  (let* ((size (mpi-comm-size))
+         (rank (mpi-comm-rank))
+         (root (- size 1)))
+    (with-static-vector (source 3 :element-type 'double-float
+                                  :initial-element 1.0d0)
+      (with-static-vector (allgood 1 :element-type '(unsigned-byte 8)
+                                     :initial-element 0)
+        (if (= rank root)
+            (with-static-vector (dest 3 :element-type 'double-float
+                                        :initial-element 0d0)
+              (mpi-reduce source dest +mpi-max+ root)
+              (when (every (lambda (x) (= x 1.0d0)) dest)
+                (setf (aref allgood 0) 1)))
+            (mpi-reduce source nil +mpi-max+ root))
+        (mpi-broadcast allgood root)
+        (is (plusp (aref allgood 0)))))))
