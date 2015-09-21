@@ -80,4 +80,4 @@ cl-mpi has been tested with mpich2 and openmpi.
      is enough to see whether rank zero passes the testsuite
    - at least one real application test, e.g. a finite-difference solver
 ** datatype handling
-   - model the memory of Lisp arrays via MPI_Datatypes
+   - model the memory of Lisp datastructures with MPI_Datatypes

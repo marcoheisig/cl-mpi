@@ -1,5 +1,3 @@
-(in-package #:asdf-user)
-
 (defsystem #:cl-mpi-testsuite
   :depends-on (#:cl-mpi #:fiveam #:cffi)
   :perform (test-op (o s)

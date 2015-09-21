@@ -1,2 +1,5 @@
 #!/bin/sh
-mpirun -np 2 ccl -b -l "test.lisp"
+
+BASEDIR=$(dirname $0)
+
+mpiexec -np 2 ccl -b -l "$BASEDIR/test.lisp"

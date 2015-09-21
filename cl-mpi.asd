@@ -1,5 +1,6 @@
-(in-package #:asdf-user)
+#+asdf3 (in-package #:asdf-user)
 
+;; this snippet prevents several dozen UIOP redefinition warnings.
 (eval-when (:compile-toplevel :load-toplevel :execute)
  (locally
     (declare #+sbcl(sb-ext:muffle-conditions sb-kernel:redefinition-warning))
@@ -7,56 +8,12 @@
       (#+sbcl(sb-kernel:redefinition-warning #'muffle-warning))
     (asdf:load-system 'cffi-grovel))))
 
-(defpackage #:cl-mpi-system
-  (:use #:asdf #:cl)
-  (:export #:mpi-library))
-
-(in-package #:cl-mpi-system)
-;;; Extend ASDF and the CFFI groveller to be MPI aware
-
-;; use "mpicc" as compiler for all mpi related cffi-grovel files
-(defmethod perform :around ((op cffi-grovel::process-op)
-                            (c cffi-grovel:grovel-file))
-  (let ((cffi-grovel::*cc* "mpicc"))
-    (call-next-method)))
-
-(defclass mpi-library (c-source-file) ())
-
-(defmethod output-files ((o compile-op) (c mpi-library))
-  (declare (ignorable o))
-  (list (make-pathname :defaults (component-pathname c)
-                       :type "so")))
-
-(defmethod perform ((o compile-op) (c mpi-library))
-  (let ((target (output-file o c))
-        (source (component-pathname c)))
-    (let ((possible-commands
-            (list
-             (format nil "mpicc -shared -fPIC -o ~A ~A" target source)
-             ;; more commands can be added here if there is a system where the
-             ;; above command fails
-             )))
-      (block compile-stub-library
-        (dolist (cmd possible-commands)
-          (if (multiple-value-bind (stdout stderr exit-code)
-                  (uiop:run-program cmd :ignore-error-status t)
-                (declare (ignore stdout stderr))
-                (zerop exit-code))
-              (progn
-                (format *standard-output* "; ~A~%" cmd)
-                (return-from compile-stub-library))))
-        (error 'operation-error :component c :operation o)))))
-
-(defmethod perform ((o load-op) (c mpi-library))
-  (cffi:load-foreign-library (output-file 'compile-op c)))
-
-(in-package #:asdf-user)
-
 (defsystem #:cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
   :author "Marco Heisig <marco.heisig@fau.de>"
   :version "0.5"
   :license "MIT"
+  :defsystem-depends-on (#:cl-mpi-asdf-utilities)
   :depends-on (#:alexandria #:cffi #:static-vectors #:cl-conspack)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
   :components
@@ -75,8 +32,8 @@
     ;; chapters of the MPI specification.
     :components
     ((:file "packages")
-     (cffi-grovel:grovel-file "grovel") ; extract all constants from "mpi.h"
-     (cl-mpi-system:mpi-library "cl-mpi-stub") ; load system MPI implementation
+     ("cffi-grovel:grovel-file" "grovel") ; extract all constants from "mpi.h"
+     ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub") ; load system MPI implementation
      (:file "configure") ; MPI implementation dependent *features*
      (:file "wrapper-types") ; CLOS wrappers for MPI handles
      (:file "variables") ; Lisp-accessible variables from mpi.h
