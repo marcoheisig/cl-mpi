@@ -52,6 +52,7 @@
 (constant (|MPI_UINT64_T| "MPI_UINT64_T"))
 (constant (|MPI_PACKED| "MPI_PACKED"))
 (constant (|MPI_NULL| "MPI_NULL") :optional t)
+(constant (|MPI_INFO_NULL| "MPI_INFO_NULL") :optional t)
 (constant (|MPI_MIN| "MPI_MIN"))
 (constant (|MPI_MAX| "MPI_MAX"))
 (constant (|MPI_SUM| "MPI_SUM"))

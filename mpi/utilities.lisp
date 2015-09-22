@@ -26,46 +26,61 @@ THE SOFTWARE.
 
 (in-package #:mpi)
 
+(defun pointer-alignment (ptr)
+  (let ((addr (pointer-address ptr)))
+    (dolist (alignment (loop for i from 14 downto 0 collect (expt 2 i)))
+      (declare (type integer alignment))
+      (if (= 0 (mod addr alignment))
+          (return alignment)))))
+
+;;; A CFFI:DEFCFUN invocation looks something like
+;;; (CFFI:DEFCFUN NAMESPEC RETURN-VALUE (ARG1 TYPE1) (ARG2 TYPE2) ...)
+;;;
+;;; A typical MPI routine takes sometimes more than eight arguments and always
+;;; returns an MPI-ERROR-CODE. To improve readablility, I provide a function
+;;; DEFMPIFUN, which looks up the type of a variable in the table
+;;; *MPI-NAMING-CONVENTIONS* and automatically returns MPI-ERROR-CODE. For
+;;; example the type of an argument variable COUNT is always :INTEGER.
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *mpi-naming-conventions*
-    (flet ((genpairs (args)
-             (destructuring-bind (type &rest symbols) args
-               (loop for symbol in symbols
-                     collect (list symbol type)))))
-      (apply
-       #'append
-       (mapcar
-        #'genpairs
-        '((:pointer
-           *buf *sendbuf *recvbuf *inbuf *outbuf *inoutbuf fun argc argv)
-          ((:pointer :int)
-           *result *count *position *size *rank *index *outcount *commute *keyval)
-          (:string string)
-          ((:pointer :boolean) *flag)
-          (:int
-           count incount outcount insize outsize sendcount recvcount source dest
-           tag sendtag recvtag size root commute errorcode)
-          (:boolean flag)
-          (mpi-errhandler errhandler)
-          (mpi-comm comm oldcomm comm1 comm2)
-          (mpi-group group group1 group2)
-          (mpi-datatype datatype sendtype recvtype oldtype)
-          (mpi-op op)
-          (mpi-request request)
-          ((:pointer (:struct mpi-status)) *status)
-          ((:pointer mpi-op) *op)
-          ((:pointer mpi-message) *message)
-          ((:pointer mpi-request) *request)
-          ((:pointer mpi-comm) *newcomm)
-          ((:pointer mpi-group) *newgroup *group)
-          ((:pointer mpi-datatype) *newtype)
-          ((:pointer (:struct mpi-status)) statuses)
-          ((:pointer mpi-datatype) sendtypes recvtypes)
-          ((:pointer mpi-request) requests)
-          ((:array :int *) indices)
-          ((:pointer (:array :int *)) ranges)
-          ((:array :int *)
-           ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls)))))))
+    (let ((table (make-hash-table)))
+      (flet ((introduce-conventions (type &rest symbols)
+               (loop for symbol in symbols do
+                 (setf (gethash symbol table) type))))
+        (mapc
+         (lambda (x) (apply #'introduce-conventions x))
+         '((:pointer
+            *buf *sendbuf *recvbuf *inbuf *outbuf *inoutbuf fun argc argv ptr)
+           ((:pointer :int)
+            *result *count *position *size *rank *index *outcount *commute *keyval)
+           (:string string)
+           ((:pointer :boolean) *flag)
+           (:int
+            count incount outcount insize outsize sendcount recvcount source dest
+            tag sendtag recvtag size root commute errorcode)
+           (:boolean flag)
+           (mpi-errhandler errhandler)
+           (mpi-comm comm oldcomm comm1 comm2)
+           (mpi-group group group1 group2)
+           (mpi-datatype datatype sendtype recvtype oldtype)
+           (mpi-op op)
+           (mpi-request request)
+           ((:pointer (:struct mpi-status)) *status)
+           ((:pointer mpi-op) *op)
+           ((:pointer mpi-message) *message)
+           ((:pointer mpi-request) *request)
+           ((:pointer mpi-comm) *newcomm)
+           ((:pointer mpi-group) *newgroup *group)
+           ((:pointer mpi-datatype) *newtype)
+           ((:pointer (:struct mpi-status)) statuses)
+           ((:pointer mpi-datatype) sendtypes recvtypes)
+           ((:pointer mpi-request) requests)
+           ((:array :int *) indices)
+           ((:pointer (:array :int *)) ranges)
+           ((:array :int *)
+            ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls))))
+      table)))
 
 (defmacro defmpifun (foreign-name (&rest mpi-identifiers)
                      &key documentation introduced deprecated removed)
@@ -75,13 +90,13 @@ THE SOFTWARE.
            (concatenate 'string "%" (substitute #\- #\_ (string-upcase foreign-name)))
            '#:cl-mpi))
         (args
-          (loop for i in mpi-identifiers
-                collect (find i *mpi-naming-conventions* :test #'eq :key #'car)))
+          (loop for symbol in mpi-identifiers
+                collect `(,symbol ,(gethash symbol *mpi-naming-conventions*))))
         (introducedp (version<= introduced +mpi-version+))
         (removedp (and removed (version<= removed +mpi-version+)))
         (deprecatedp (version<= deprecated +mpi-version+)))
-     ;; Currently I do not handle deprecation - this is ok because as of June
-     ;; 2015 the MPI Committee also has no way to handle deprecation.
+    ;; Currently I do not handle deprecation - this is ok because as of June
+    ;; 2015 the MPI Committee also has no way to handle deprecation.
     (declare (ignorable deprecatedp))
     (if documentation (push documentation args))
     (cond
@@ -100,53 +115,53 @@ THE SOFTWARE.
       (t
        `(defcfun (,foreign-name ,lisp-name) mpi-error-code ,@args)))))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun %bits-per-element (array-element-type)
-    "Compute the number of bits reserved per element of a simple-array."
-    (let ((initial-element
-            (cond
-              ((subtypep array-element-type 'character) #\B)
-              ((subtypep array-element-type 'float) (coerce 0 array-element-type))
-              (t 0))))
-      (with-static-vector (test-array 2 :element-type array-element-type
-                                        :initial-element initial-element)
-        (let ((ptr (static-vector-pointer test-array)))
-          ;; flip more and more bits until the second value of the static array
-          ;; changes. The upper bound of 128 should never be reached and is only a
-          ;; safeguard against overwriting the whole heap in case of something odd.
-          (loop for bit from 0 to 128 do
-            (setf (mem-ref ptr :uint8 (floor bit 8))
-                  (expt 2 (mod bit 8)))
-                when (not (eql (aref test-array 1)
-                               initial-element))
-                  do (return bit)
-                finally
-                   (error "Unknown array memory layout. Possible memory corruption!")))))))
+(defmacro %bits-per-element (array-element-type)
+  "Compute the number of bits reserved per element of a simple-array."
+  (let ((initial-element
+          (cond
+            ((subtypep array-element-type 'character) #\B)
+            ((subtypep array-element-type 'float) (coerce 0 array-element-type))
+            (t 0))))
+    (with-static-vector (test-array 2 :element-type array-element-type
+                                      :initial-element initial-element)
+      (let ((ptr (static-vector-pointer test-array)))
+        ;; flip more and more bits until the second value of the static array
+        ;; changes. The upper bound of 128 should never be reached and is only a
+        ;; safeguard against overwriting the whole heap in case of something odd.
+        (loop for bit from 0 to 128 do
+          (setf (mem-ref ptr :uint8 (floor bit 8))
+                (expt 2 (mod bit 8)))
+              when (not (eql (aref test-array 1)
+                             initial-element))
+                do (return bit)
+              finally
+                 (error "Unknown array memory layout. Possible memory corruption!"))))))
 
 (declaim (inline bits-per-element))
 (defun bits-per-element (array)
   (etypecase array
-    ((simple-array single-float (*))       #.(%bits-per-element 'single-float))
-    ((simple-array double-float (*))       #.(%bits-per-element 'double-float))
+    ((simple-array single-float (*))       (%bits-per-element single-float))
+    ((simple-array double-float (*))       (%bits-per-element double-float))
     #+sbcl
-    ((simple-array (unsigned-byte 1) (*))  #.(%bits-per-element '(unsigned-byte 1)))
+    ((simple-array (unsigned-byte 1) (*))  (%bits-per-element (unsigned-byte 1)))
     #+sbcl
-    ((simple-array (unsigned-byte 2) (*))  #.(%bits-per-element '(unsigned-byte 2)))
+    ((simple-array (unsigned-byte 2) (*))  (%bits-per-element (unsigned-byte 2)))
     #+sbcl
-    ((simple-array (unsigned-byte 4) (*))  #.(%bits-per-element '(unsigned-byte 4)))
-    ((simple-array (signed-byte 8) (*))    #.(%bits-per-element '(signed-byte 8)))
-    ((simple-array (unsigned-byte 8) (*))  #.(%bits-per-element '(unsigned-byte 8)))
-    ((simple-array (signed-byte 16) (*))   #.(%bits-per-element '(signed-byte 16)))
-    ((simple-array (unsigned-byte 16) (*)) #.(%bits-per-element '(unsigned-byte 16)))
-    ((simple-array (signed-byte 32) (*))   #.(%bits-per-element '(signed-byte 32)))
-    ((simple-array (unsigned-byte 32) (*)) #.(%bits-per-element '(unsigned-byte 32)))
-    ((simple-array (signed-byte 64) (*))   #.(%bits-per-element '(signed-byte 64)))
-    ((simple-array (unsigned-byte 64) (*)) #.(%bits-per-element '(unsigned-byte 64)))
-    ((simple-array base-char (*))          #.(%bits-per-element 'base-char))
+    ((simple-array (unsigned-byte 4) (*))  (%bits-per-element (unsigned-byte 4)))
+    ((simple-array (signed-byte 8) (*))    (%bits-per-element (signed-byte 8)))
+    ((simple-array (unsigned-byte 8) (*))  (%bits-per-element (unsigned-byte 8)))
+    ((simple-array (signed-byte 16) (*))   (%bits-per-element (signed-byte 16)))
+    ((simple-array (unsigned-byte 16) (*)) (%bits-per-element (unsigned-byte 16)))
+    ((simple-array (signed-byte 32) (*))   (%bits-per-element (signed-byte 32)))
+    ((simple-array (unsigned-byte 32) (*)) (%bits-per-element (unsigned-byte 32)))
+    ((simple-array (signed-byte 64) (*))   (%bits-per-element (signed-byte 64)))
+    ((simple-array (unsigned-byte 64) (*)) (%bits-per-element (unsigned-byte 64)))
+    ((simple-array base-char (*))          (%bits-per-element base-char))
     #+sbcl
-    ((simple-array character (*))          #.(%bits-per-element 'character))))
+    ((simple-array character (*))          (%bits-per-element character))))
 
-(declaim (inline static-vector-mpi-data))
+(declaim (inline static-vector-mpi-data)
+         (ftype (function * (values foreign-pointer mpi-datatype (signed-byte 32)))))
 (defun static-vector-mpi-data (vector start end)
   "Return a pointer to the raw memory of the given array, as well as the
 corresponding mpi-type and length.
@@ -154,7 +169,8 @@ corresponding mpi-type and length.
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
   (declare (type (simple-array * (*)) vector)
-           (type (or (integer 0) null) start end))
+           (type (or null (integer 0 #.array-total-size-limit)) start end)
+           (optimize (safety 0) (debug 0)))
   (let* ((n-bits (bits-per-element vector))
          (mpi-datatype
            (ecase n-bits

@@ -59,6 +59,7 @@ THE SOFTWARE.
 (defmpifun "MPI_Unpack" (*inbuf insize *position *outbuf outcount datatype comm))
 ;; (defmpifun "MPI_Unpack_external")
 
+(declaim (ftype (function (mpi-datatype) (signed-byte 32)) mpi-type-size))
 (defun mpi-type-size (datatype)
   (with-foreign-results ((size :int))
     (%mpi-type-size datatype size)))

@@ -75,7 +75,10 @@ THE SOFTWARE.
                        recv-start recv-end)
   (declare (type simple-array send-data recv-data)
            (type (signed-byte 32)
-                 dest send-tag source  recv-tag))
+                 dest send-tag source recv-tag)
+           (type mpi-comm comm)
+           (type (or null (integer 0 #.array-total-size-limit))
+                 send-start send-end recv-start recv-end))
   (multiple-value-bind (send-buf send-type send-count)
       (static-vector-mpi-data send-data send-start send-end)
     (multiple-value-bind (recv-buf recv-type recv-count)
@@ -96,7 +99,8 @@ sender and receiver side do not match."
   (declare (type simple-array array)
            (type (signed-byte 32) dest tag)
            (type mpi-comm comm)
-           (type (member :basic :buffered :synchronous :ready) mode))
+           (type (member :basic :buffered :synchronous :ready) mode)
+           (type (or null (integer 0 #.array-total-size-limit)) start end))
   (let ((send-function
           (ecase mode
             (:basic #'%mpi-send)
@@ -122,7 +126,8 @@ mechanism such as sb-sys:with-pinned-objects."
   (declare (type simple-array array)
            (type (signed-byte 32) dest tag)
            (type mpi-comm comm)
-           (type (member :basic :buffered :synchronous :ready) mode))
+           (type (member :basic :buffered :synchronous :ready) mode)
+           (type (or null (integer 0 #.array-total-size-limit)) start end))
   (let ((send-function
           (ecase mode
             (:basic #'%mpi-isend)
@@ -139,7 +144,8 @@ mechanism such as sb-sys:with-pinned-objects."
                                 (tag +mpi-any-tag+))
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
-           (type mpi-comm comm))
+           (type mpi-comm comm)
+           (type (or null (integer 0 #.array-total-size-limit)) start end))
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array start end)
     ;; TODO check the mpi-status
@@ -150,7 +156,8 @@ mechanism such as sb-sys:with-pinned-objects."
                                  (tag +mpi-any-tag+))
   (declare (type simple-array array)
            (type (signed-byte 32) source tag)
-           (type mpi-comm comm))
+           (type mpi-comm comm)
+           (type (or null (integer 0 #.array-total-size-limit)) start end))
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array start end)
     (with-foreign-results ((request 'mpi-request))
@@ -159,6 +166,8 @@ mechanism such as sb-sys:with-pinned-objects."
 (defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
+  (declare (type (signed-byte 32) source tag)
+           (type mpi-comm comm))
   (with-foreign-object (status '(:struct mpi-status))
     (%mpi-probe source tag comm status)
     (with-foreign-slots ((mpi-tag mpi-error) status (:struct mpi-status))
@@ -168,6 +177,7 @@ mechanism such as sb-sys:with-pinned-objects."
        mpi-tag))))
 
 (defun mpi-wait (request)
+  (declare (type mpi-request request))
   (with-foreign-objects ((status* '(:struct mpi-status))
                          (request* 'mpi-request))
     (setf (mem-ref request* 'mpi-request) request)
@@ -191,4 +201,4 @@ mechanism such as sb-sys:with-pinned-objects."
                     (mem-aref requests* #+openmpi :pointer
                                         #-openmpi :int i))))))
 
-;; TODO make GC free MPI_Request handles
+;; TODO make GC free MPI_Request handles automatically

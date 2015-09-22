@@ -20,9 +20,10 @@ cl-mpi has been tested with mpich2 and openmpi.
   In case you change the MPI implementation of your system, cl-mpi needs to be
   rebuilt. To do this, simply run (asdf:load-system :cl-mpi :force t).
 
-  Often it is necessary to perform a serial asdf:load-system before the MPI
-  parallel ones, because asdf fails if operations are executed concurrently
-  from different lisp images on the same node.
+  Sometimes (e.g. on SBCL) it is necessary to perform a serial
+  (asdf:load-system :cl-mpi) before the MPI parallel ones, because asdf fails if
+  operations are executed concurrently from different lisp images on the same
+  computer.
 
 * Testing
   To run the testsuite:
@@ -30,6 +31,19 @@ cl-mpi has been tested with mpich2 and openmpi.
 
   To run the benchmarks
   ./scripts/benchmark-<YOUR-FAVOURITE-LISP>.sh
+
+* Performance
+  cl-mpi makes no additional copies of transmitted data and has therefore the
+  same bandwidth as any other language (C, FORTRAN). However the convenience
+  of error handling, automatic inference of the message types and safe
+  computation of memory locations adds a little overhead to each message. The
+  exact overhead varies depending on the Lisp implementation and platform but
+  is somewhere around 1000 machine cycles.
+
+  tl;dr
+  Comparing to C, FORTRAN or raw assembler:
+  - latency increase per message: 400 nanoseconds (SBCL on an 2.4GHz Intel Core i7-5500U)
+  - bandwidth unchanged
 
 * Authors
   Alex Fukunaga

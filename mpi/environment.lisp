@@ -48,7 +48,7 @@ be 0.001")
 ;; (defmpifun "MPI_Add_error_class")
 ;; (defmpifun "MPI_Add_error_code")
 ;; (defmpifun "MPI_Add_error_string")
-;; (defmpifun "MPI_Alloc_mem")
+(defmpifun "MPI_Alloc_mem" (count ptr *buf))
 (defmpifun "MPI_Comm_call_errhandler" (comm errorcode))
 ;; (defmpifun "MPI_Comm_create_errhandler")
 ;; (defmpifun "MPI_Comm_get_errhandler")
@@ -62,7 +62,7 @@ be 0.001")
 ;; (defmpifun "MPI_File_set_errhandler")
 (defmpifun "MPI_Finalize" ())
 (defmpifun "MPI_Finalized" (*flag))
-;; (defmpifun "MPI_Free_mem")
+(defmpifun "MPI_Free_mem" (ptr))
 ;; (defmpifun "MPI_Get_library_version")
 (defmpifun "MPI_Get_processor_name" (string *size))
 ;; (defmpifun "MPI_Get_version")
@@ -89,7 +89,8 @@ routine (even MPI-INIT) may be called. The user must ensure that all pending
 communications involving a process complete before the process calls
 MPI-FINALIZE."
   (when (mpi-initialized)
-    (%mpi-finalize)))
+    (unless (mpi-finalized)
+      (%mpi-finalize))))
 
 (defun mpi-initialized ()
   "Returns true if MPI_INIT has been called and nil otherwise.
@@ -126,6 +127,7 @@ system)."
 
 (defun mpi-error-string (errorcode)
   "Convert the given errorcode to a human readable error message"
+  (declare (type (signed-byte 32) errorcode))
   (with-foreign-object (strlen :int)
     (with-foreign-pointer (error-string +mpi-max-error-string+)
       (%mpi-error-string errorcode error-string strlen)

@@ -29,6 +29,8 @@ THE SOFTWARE.
                                         (tag 0))
   "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It can
   transmit any object to a matching MPI-RECEIVE-ANYTHING."
+  (declare (type (signed-byte 32) dest tag)
+           (type mpi-comm comm))
   (let ((buffer (conspack:encode object :stream :static)))
     (mpi-send buffer dest :tag tag :comm comm)
     (free-static-vector buffer)))
@@ -37,6 +39,8 @@ THE SOFTWARE.
                                       (tag +mpi-any-tag+))
   "MPI-RECEIVE-ANYTHING returns an object that was passed to a matching
   MPI-SEND-ANYTHING."
+  (declare (type (signed-byte 32) source tag)
+           (type mpi-comm comm))
   (let* ((len (mpi-probe source))
          (buffer (make-static-vector len :element-type '(unsigned-byte 8))))
     (mpi-recv buffer source :tag tag :comm comm)
@@ -47,6 +51,8 @@ THE SOFTWARE.
                                       object)
   "The node with rank ROOT sends the given object to every other rank in the
   communicator COMM."
+  (declare (type (signed-byte  32) root)
+           (type mpi-comm comm))
   (cond
     ((= root (mpi-comm-rank))
      (let* ((sendbuf (conspack:encode object :stream :static))
