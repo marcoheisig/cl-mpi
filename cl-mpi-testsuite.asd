@@ -9,4 +9,5 @@
     :components
             ((:file "packages")
              (:file "serial-tests")
-             (:file "parallel-tests")))))
+             (:file "parallel-tests")
+             (:file "testsuite")))))

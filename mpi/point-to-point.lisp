@@ -183,8 +183,9 @@ mechanism such as sb-sys:with-pinned-objects."
     (setf (mem-ref request* 'mpi-request) request)
     (%mpi-wait request* status*)
     (setf (mpi-object-handle request)
-          (mem-ref request* #+openmpi :pointer
-                            #-openmpi :int))
+          (mem-ref request* #.(case +mpi-implementation+
+                                (:openmpi :pointer)
+                                (t :int))))
     request))
 
 (defun mpi-waitall (&rest requests)
@@ -198,7 +199,8 @@ mechanism such as sb-sys:with-pinned-objects."
       (loop for request in requests
             and i below n-requests do
               (setf (mpi-object-handle request)
-                    (mem-aref requests* #+openmpi :pointer
-                                        #-openmpi :int i))))))
+                    (mem-aref requests* #.(case +mpi-implementation+
+                                            (:openmpi :pointer)
+                                            (t :int))))))))
 
 ;; TODO make GC free MPI_Request handles automatically

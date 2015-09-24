@@ -27,10 +27,9 @@ cl-mpi has been tested with mpich2 and openmpi.
 
 * Testing
   To run the testsuite:
-  ./scripts/test-<YOUR-FAVOURITE-LISP>.sh
-
-  To run the benchmarks
-  ./scripts/benchmark-<YOUR-FAVOURITE-LISP>.sh
+  ./scripts/cl-mpi-test.sh all
+  or
+  ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
 
 * Performance
   cl-mpi makes no additional copies of transmitted data and has therefore the

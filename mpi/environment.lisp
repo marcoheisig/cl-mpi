@@ -74,9 +74,15 @@ be 0.001")
 ;; (defmpifun "MPI_Win_set_errhandler")
 
 (defun mpi-init ()
-  "In CL-MPI, MPI-INIT is automatically called called at load-time and
-subsequent calls have no effect."
+  (reload-mpi-libraries)
   (unless (mpi-initialized)
+    ;; Initialize cl-mpi constants like +MPI-COMM-WORLD+.
+    (mapc
+     (lambda (obj)
+       (setf (mpi-object-handle obj)
+             (foreign-mpi-value (name obj)
+                                (class-name (class-of obj)))))
+     *mpi-constants*)
     (%mpi-init (null-pointer) (null-pointer))
     ;; by default MPI reacts to each failure by crashing the process. This is
     ;; not the Lisp way of doing things. The following call makes error

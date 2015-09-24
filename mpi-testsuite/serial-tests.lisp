@@ -1,19 +1,6 @@
 (in-package :mpi-testsuite)
-(in-suite mpi-testsuite)
 
-(defun run-cl-mpi-testsuite ()
-  (mpi-init)
-  (assert (mpi-initialized))
-  (let ((size (mpi-comm-size))
-        (rank (mpi-comm-rank)))
-    (assert (> size 0))
-    (assert (> size rank -1))
-    ;; discard the output of all but one MPI process
-    (let ((*test-dribble*
-            (if (zerop rank)
-                *test-dribble*
-                (make-broadcast-stream))))
-      (run! 'mpi-testsuite))))
+(in-suite mpi-serial-tests)
 
 (test (mpi-init)
   "MPI Initialization."
@@ -26,10 +13,6 @@
   (let ((processor-name (mpi-get-processor-name)))
     (is (stringp processor-name))
     (is (plusp (length processor-name)))))
-
-(test (mpi-barrier :depends-on mpi-init)
-  "synchronize all processes with multiple MPI barriers."
-  (loop for i from 0 below 10 do (mpi-barrier)))
 
 (test (serial-groups :depends-on mpi-init)
   "MPI group tests that can be run on a single process."
@@ -47,8 +30,3 @@
     (is (= (ceiling size 2) (mpi-group-size evens)))
     (is (= (floor size 2) (mpi-group-size odds)))
     (mpi-group-free all-procs first all-but-first odds evens)))
-
-(test (parallel :depends-on mpi-init)
-  "Check whether there is more than one MPI process."
-  (is (> (mpi-comm-size) 1)
-      "More than one MPI process is required for most MPI tests"))

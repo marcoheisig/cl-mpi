@@ -26,13 +26,6 @@ THE SOFTWARE.
 
 (in-package #:mpi)
 
-(defun pointer-alignment (ptr)
-  (let ((addr (pointer-address ptr)))
-    (dolist (alignment (loop for i from 14 downto 0 collect (expt 2 i)))
-      (declare (type integer alignment))
-      (if (= 0 (mod addr alignment))
-          (return alignment)))))
-
 ;;; A CFFI:DEFCFUN invocation looks something like
 ;;; (CFFI:DEFCFUN NAMESPEC RETURN-VALUE (ARG1 TYPE1) (ARG2 TYPE2) ...)
 ;;;
@@ -142,11 +135,11 @@ THE SOFTWARE.
   (etypecase array
     ((simple-array single-float (*))       (%bits-per-element single-float))
     ((simple-array double-float (*))       (%bits-per-element double-float))
-    #+sbcl
+    #-ccl
     ((simple-array (unsigned-byte 1) (*))  (%bits-per-element (unsigned-byte 1)))
-    #+sbcl
+    #-ccl
     ((simple-array (unsigned-byte 2) (*))  (%bits-per-element (unsigned-byte 2)))
-    #+sbcl
+    #-ccl
     ((simple-array (unsigned-byte 4) (*))  (%bits-per-element (unsigned-byte 4)))
     ((simple-array (signed-byte 8) (*))    (%bits-per-element (signed-byte 8)))
     ((simple-array (unsigned-byte 8) (*))  (%bits-per-element (unsigned-byte 8)))
@@ -157,14 +150,14 @@ THE SOFTWARE.
     ((simple-array (signed-byte 64) (*))   (%bits-per-element (signed-byte 64)))
     ((simple-array (unsigned-byte 64) (*)) (%bits-per-element (unsigned-byte 64)))
     ((simple-array base-char (*))          (%bits-per-element base-char))
-    #+sbcl
+    #-ccl
     ((simple-array character (*))          (%bits-per-element character))))
 
 (declaim (inline static-vector-mpi-data)
          (ftype (function * (values foreign-pointer mpi-datatype (signed-byte 32)))))
 (defun static-vector-mpi-data (vector start end)
   "Return a pointer to the raw memory of the given array, as well as the
-corresponding mpi-type and length.
+corresponding MPI-DATATYPE and the number of elements to transmit.
 
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
@@ -207,4 +200,18 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
       ,@(loop for binding in bindings
               collect `(mem-ref ,@binding)))))
 
+(defun reload-mpi-libraries ()
+  "Load all MPI related libraries again. This might be necessary after a
+session is resumed from a Lisp image"
 
+  ;; the following code can actually be triggered on ECL, when quicklisp is
+  ;; available at image creation time, but not when the image is executed.
+  #+quicklisp
+  (unless (find :quicklisp *features*)
+    (let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname))))
+      (when (probe-file quicklisp-init)
+        (load quicklisp-init))))
+  (load-foreign-library
+   (asdf:output-file
+    'asdf:compile-op
+    (asdf:find-component "cl-mpi" '("mpi" . "cl-mpi-stub")))))

@@ -31,17 +31,26 @@
     ;; chapters of the MPI specification.
     :components
     ((:file "packages")
+
      ;; extract all constants from "mpi.h"
      ("cffi-grovel:grovel-file" "grovel" :depends-on ("packages"))
+
      ;; load system MPI implementation
      ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub" :depends-on ("grovel"))
+
      ;; MPI implementation dependent *features*
      (:file "configure" :depends-on ("grovel"))
+
      ;; CLOS wrappers for MPI handles
      (:file "wrapper-types" :depends-on ("configure"))
+
      ;; Lisp-accessible variables from mpi.h
-     (:file "variables" :depends-on ("wrapper-types"))
-     (:file "utilities" :depends-on ("variables"))
+     (:file "constants" :depends-on ("wrapper-types"))
+
+     ;; helper functions
+     (:file "utilities" :depends-on ("constants"))
+
+     ;; the rest
      (:file "datatypes" :depends-on ("utilities"))
      (:file "collective" :depends-on ("utilities"))
      (:file "contexts" :depends-on ("utilities"))

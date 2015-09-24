@@ -1,5 +1,6 @@
 (in-package :mpi-testsuite)
-(in-suite mpi-testsuite)
+
+(in-suite mpi-parallel-tests)
 
 (defun team-partner ()
   "Group all processes in teams of two. Return the rank of the partner."
@@ -14,7 +15,14 @@
       ((oddp rank)
        (- rank 1)))))
 
-(test (mpi-ring :depends-on parallel)
+;;; The parallel tests must form a serial dependency chain so that their order
+;;; is deterministic. Otherwise the parallel testsuite can deadlock.
+
+(test (mpi-barrier)
+  "synchronize all processes with multiple MPI barriers."
+  (loop for i from 0 below 10 do (mpi-barrier)))
+
+(test (mpi-ring :depends-on mpi-barrier)
   "Send a Common Lisp datastructure through all nodes."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size))
@@ -35,7 +43,7 @@
         (free-static-vector buffer)
         (free-static-vector message)))))
 
-(test (mpi-sendrecv :depends-on parallel)
+(test (mpi-sendrecv :depends-on mpi-ring)
   "Send a Common Lisp datastructure through all nodes using mpi-sendrecv."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
@@ -73,7 +81,7 @@
       (free-static-vector recvbuf)
       (free-static-vector sendbuf))))
 
-(test (mpi-broadcast :depends-on parallel)
+(test (mpi-broadcast :depends-on send-subsequence)
   "Use mpi-broadcast to broadcast a single number."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
@@ -85,7 +93,7 @@
         (mpi-broadcast buffer root)
         (is (= (aref buffer 0) message))))))
 
-(test (mpi-allgather :depends-on parallel)
+(test (mpi-allgather :depends-on mpi-broadcast)
   "Use mpi-allgather to generate a vector of all ranks."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
@@ -100,7 +108,7 @@
                   finally
                      (return t)))))))
 
-(test (nonblocking :depends-on parallel)
+(test (nonblocking :depends-on mpi-allgather)
   "Nonblocking communication with MPI-I[SEND,RECV], MPI-WAIT and
 MPI-WAITALL"
   (let ((partner (team-partner)))
@@ -126,7 +134,7 @@ MPI-WAITALL"
           (is (every #'mpi-null-p requests))
           (is (equalp recvbuf #(3 3 3))))))))
 
-(test (mpi-allreduce :depends-on parallel)
+(test (mpi-allreduce :depends-on nonblocking)
       "Perform different reductions with MPI-Allreduce."
       (let ((size (mpi-comm-size)))
         (with-static-vector (source 3 :element-type '(unsigned-byte 64)
@@ -138,7 +146,7 @@ MPI-WAITALL"
             (mpi-allreduce source dest +mpi-sum+)
             (is (every (lambda (x) (= x size)) dest))))))
 
-(test (mpi-reduce :depends-on mpi-broadcast)
+(test (mpi-reduce :depends-on mpi-allreduce)
   "Perform different reductions with MPI-Reduce"
   (let* ((size (mpi-comm-size))
          (rank (mpi-comm-rank))

@@ -26,6 +26,9 @@ THE SOFTWARE.
 
 (in-package #:cl-mpi)
 
+;;; (Almost) all MPI functions return a status code as an integer. In cl-mpi,
+;;; the user never sees the status code at all. It is automatically checked
+;;; and converted to a condition.
 (define-condition mpi-error-condition (error)
   ((error-code :initarg :error-code :reader error-code))
   (:report
@@ -39,10 +42,14 @@ THE SOFTWARE.
       (error 'mpi-error-condition :error-code value)
     (ignore () nil)))
 
+;;; There is a plethora of types in MPI. We represent them as a subclass of
+;;; MPI-OBJECT and provide appropriate CFFI wrapper types of the form
+;;; <CLASSNAME>-type.
 (define-foreign-type mpi-object-type ()
   () (:actual-type
-      #+openmpi :pointer
-      #-openmpi :int))
+      #.(if (eq +mpi-implementation+ :openmpi)
+            :pointer
+            :int)))
 
 (define-foreign-type mpi-errhandler-type (mpi-object-type)
   () (:simple-parser mpi-errhandler))
@@ -82,46 +89,53 @@ THE SOFTWARE.
     :accessor mpi-object-handle
     :initarg :handle
     :type
-    #+openmpi foreign-pointer
-    #-openmpi (signed-byte 32))))
+    #.(if (eq +mpi-implementation+ :openmpi)
+          'foreign-pointer
+          '(signed-byte 32)))))
 
 (defclass mpi-errhandler (mpi-object) ())
+
 (defclass mpi-comm (mpi-object) ())
+
 (defclass mpi-group (mpi-object) ())
+
 (defclass mpi-datatype (mpi-object) ())
+
 (defclass mpi-op (mpi-object) ())
+
 (defclass mpi-info (mpi-object) ())
+
 (defclass mpi-request (mpi-object) ())
 
-;;; if %handle is not given it is derived from the name of the object. An
-;;; error is signalled if such a symbol is not found
-(defmethod initialize-instance :after ((object mpi-object) &rest args)
-  (declare (ignore args))
-  (unless (slot-boundp object '%handle)
-    #+openmpi
-    (let* ((openmpi-name
-             (concatenate
-              'string
-              (typecase object
-                (mpi-request "ompi_")
-                (mpi-op "ompi_mpi_op_")
-                (t "ompi_mpi_"))
-              (string-downcase (name object))))
-           (handle (foreign-symbol-pointer openmpi-name)))
-      (if handle
-          (setf (slot-value object '%handle) handle)
-          (error "MPI symbol ~A could not be found" openmpi-name)))
-    #-openmpi
-    (setf (slot-value object '%handle)
-          (symbol-value
-           (find-symbol
-            (concatenate 'string "MPI_" (name object))
-            '#:mpi-header)))))
+(defun foreign-mpi-value (name class)
+  "Given the name of a constant as in the MPI standard and a symbol
+designating the desired class of that symbol, return the implementation
+dependent handle to that MPI constant."
+  #.(case +mpi-implementation+
+      (:openmpi
+       `(let* ((basename (subseq name 4)) ; drop the "MPI_" prefix
+               (prefix
+                 (case class
+                   ((mpi-request) "ompi_")
+                   ((mpi-op) "ompi_mpi_op_")
+                   (otherwise "ompi_mpi_")))
+               (openmpi-name
+                 (concatenate 'string prefix (string-downcase basename)))
+               (found
+                 (foreign-symbol-pointer openmpi-name)))
+          (unless found
+            (error "MPI symbol ~A could not be found" openmpi-name))
+          found))
+      (t
+       `(symbol-value
+         (find-symbol name '#:mpi-header)))))
 
 (defmethod make-load-form ((object mpi-object) &optional env)
   (declare (ignore env))
   `(make-instance ',(class-of object)
-                  :name ,(name object)))
+                  :name ,(name object)
+                  :handle (foreign-mpi-value ,(name object)
+                                             ',(class-name (class-of object)))))
 
 (defmethod expand-to-foreign (value (type mpi-object-type))
   `(mpi-object-handle ,value))
@@ -147,11 +161,12 @@ THE SOFTWARE.
       :handle ,value)))
 
 (defun mpi-object= (a b)
-  #+openmpi
-  (pointer-eq (mpi-object-handle a)
-              (mpi-object-handle b))
-  #-openmpi
-  (eql (mpi-object-handle a)
-       (mpi-object-handle b)))
+  #.(case +mpi-implementation+
+      (:openmpi
+       `(pointer-eq (mpi-object-handle a)
+                    (mpi-object-handle b)))
+      (t
+        `(eql (mpi-object-handle a)
+              (mpi-object-handle b)))))
 
 
