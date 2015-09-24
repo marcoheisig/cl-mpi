@@ -26,22 +26,22 @@ for LISP in $LISP_IMPLEMENTATIONS; do
 
     if [ ! -e $IMAGE ]
     then
-    echo "/========================================"
+    echo "========================================="
     echo "Building $LISP image $IMAGE..."
 
         cl-launch --lisp $LISP \
                   -Q -s cl-mpi -s cl-mpi-testsuite -s mpi-benchmarks \
                   -o $IMAGE -d $IMAGE -L $BASEDIR/cl-mpi-test.lisp -E main
     echo "...$LISP image complete"
-    echo "\========================================"
+    echo "========================================="
     echo
     fi
 
-    echo "/========================================"
+    echo "========================================="
     echo "Testing $LISP..."
 
     mpiexec -n 4 $IMAGE
     echo "...$LISP testing complete"
-    echo "\========================================"
+    echo "========================================="
     echo
 done

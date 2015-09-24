@@ -1,3 +1,5 @@
+# cl-mpi
+
 cl-mpi provides CFFI bindings for the Message Passing Interface (MPI). MPI is
 typically used in High Performance Computing to utilize big parallel computers
 with thousands of cores. It features minimal communication overhead with a
@@ -7,7 +9,7 @@ If you have questions or suggestions, feel free to contact me.
 
 cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
 
-* Usage
+## Usage
   An MPI program must be launched with "mpirun" or "mpiexec". These commands
   spawn multiple processes depending on your system and commandline
   parameters. Each process is identical, except that it has a unique rank that
@@ -25,13 +27,13 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
   operations are executed concurrently from different lisp images on the same
   computer.
 
-* Testing
+## Testing
   To run the testsuite:
   ./scripts/cl-mpi-test.sh all
   or
   ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
 
-* Performance
+## Performance
   cl-mpi makes no additional copies of transmitted data and has therefore the
   same bandwidth as any other language (C, FORTRAN). However the convenience
   of error handling, automatic inference of the message types and safe
@@ -44,51 +46,47 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
   - latency increase per message: 400 nanoseconds (SBCL on a 2.4GHz Intel i7-5500U)
   - bandwidth unchanged
 
-* Authors
+## Authors
   Alex Fukunaga
   Marco Heisig
 
-* Special Thanks
+## Special Thanks
   This project was funded by KONWIHR (The Bavarian Competence Network for
   Technical and Scientific High Performance Computing) and the Chair for
   Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
 
   Big thanks to Nicolas Neuss for all the useful suggestions.
 
-* TODOs (roughly in orde of priority)
-** one-sided MPI 3.0 communications
+## TODOs (roughly in orde of priority)
+### one-sided MPI 3.0 communications
    - memory windows
    - get/put operations
-** more collective operations
+### more collective operations
    - allgatherv
    - alltoall
    - alltoallw
    - allgatherv
    - scatter / scatterv
    - scan
-** MPI IO
+### MPI IO
    - make MPI IO play nicely with lisp streams, pathnames, etc.
-** full MPI benchmark suite
+### full MPI benchmark suite
    - pingping
-   - sendrecv
    - exchange
-   - allreduce
-   - reduce
    - reduce_scatter
    - allgather/allgatherv
    - gather
    - scatter / scatterv
    - alltoall / alltoallv
-   - barrier
    - ...-ANYTHING MPI extensions
-** MPI extensions
+### MPI extensions
    - coarrays
    - checkpointing
    - allow different serialization tools, like cl-store
-** testsuite improvements
+### testsuite improvements
    - one test per function
    - failure of individual ranks should be propagated to all ranks so that it
      is enough to see whether rank zero passes the testsuite
    - at least one real application test, e.g. a finite-difference solver
-** datatype handling
+### datatype handling
    - model the memory of Lisp datastructures with MPI_Datatypes
