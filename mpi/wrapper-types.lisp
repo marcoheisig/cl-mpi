@@ -111,6 +111,7 @@ THE SOFTWARE.
   "Given the name of a constant as in the MPI standard and a symbol
 designating the desired class of that symbol, return the implementation
 dependent handle to that MPI constant."
+  (declare (ignorable class))
   #.(case +mpi-implementation+
       (:openmpi
        `(let* ((basename (subseq name 4)) ; drop the "MPI_" prefix

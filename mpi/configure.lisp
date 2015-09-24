@@ -19,6 +19,8 @@
               mpi-header::|MPI_VERSION|
               mpi-header::|MPI_SUBVERSION|)))
 
+(defconstant +mpi-implementation-version+ :unknown)
+
 (defconstant +mpi-max-error-string+ mpi-header::|MPI_MAX_ERROR_STRING|)
 (defconstant +mpi-max-processor-name+ mpi-header::|MPI_MAX_PROCESSOR_NAME|)
 (defconstant +mpi-any-tag+ mpi-header::|MPI_ANY_TAG|)

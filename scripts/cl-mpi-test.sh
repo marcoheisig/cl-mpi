@@ -40,7 +40,7 @@ for LISP in $LISP_IMPLEMENTATIONS; do
     echo "/========================================"
     echo "Testing $LISP..."
 
-    mpiexec -npernode 4 $IMAGE
+    mpiexec -n 4 $IMAGE
     echo "...$LISP testing complete"
     echo "\========================================"
     echo

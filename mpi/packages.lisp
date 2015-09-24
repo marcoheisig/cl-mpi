@@ -7,6 +7,8 @@
   (:export
    ;; configure.lisp
    #:+mpi-version
+   #:+mpi-implementation+
+   #:+mpi-implementation-version+
    #:+mpi-max-error-string+
    #:+mpi-any-tag+
    #:+mpi-any-source+
@@ -27,7 +29,7 @@
    #:mpi-request
    #:mpi-object=
 
-   ;; variables.lisp
+   ;; constants.lisp
    #:+mpi-errors-return+
    #:+mpi-errors-are-fatal+
    #:+mpi-group-empty+

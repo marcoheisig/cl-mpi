@@ -74,7 +74,7 @@ be 0.001")
 ;; (defmpifun "MPI_Win_set_errhandler")
 
 (defun mpi-init ()
-  (reload-mpi-libraries)
+  #-sbcl(reload-mpi-libraries)
   (unless (mpi-initialized)
     ;; Initialize cl-mpi constants like +MPI-COMM-WORLD+.
     (mapc
