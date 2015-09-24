@@ -10,28 +10,33 @@ If you have questions or suggestions, feel free to contact me.
 cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
 
 * Usage
-  An MPI program must be launched with "mpirun" or "mpiexec". These commands
+  An MPI program must be launched with =mpirun= or =mpiexec=. These commands
   spawn multiple processes depending on your system and commandline
   parameters. Each process is identical, except that it has a unique rank that
-  can be queried with (MPI-COMM-RANK). The ranks are assigned from 0 to
-  (- (MPI-COMM-SIZE) 1).
+  can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
+  =(- (MPI-COMM-SIZE) 1)=.
 
   A wide range of communication functions is avilable to transmit messages
   between different ranks.
 
   In case you change the MPI implementation of your system, cl-mpi needs to be
-  rebuilt. To do this, simply run (asdf:load-system :cl-mpi :force t).
+  rebuilt. To do this, simply run
+  #+BEGIN_SRC lisp
+    (asdf:load-system :cl-mpi :force t)
+  #+END_SRC
 
   Sometimes (e.g. on SBCL) it is necessary to perform a serial
-  (asdf:load-system :cl-mpi) before the MPI parallel ones, because asdf fails if
-  operations are executed concurrently from different lisp images on the same
-  computer.
+  =(asdf:load-system :cl-mpi)= on a node before the MPI parallel ones, because
+  asdf fails if operations are executed concurrently from different lisp
+  images on the same machine. The easiest aproach however is to build
+  standalone executables and start those with =mpiexec=. See the =scripts/=
+  directory for an example.
 
 * Testing
   To run the testsuite:
-  ./scripts/cl-mpi-test.sh all
+  =./scripts/cl-mpi-test.sh all=
   or
-  ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
+  =./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>=
 
 * Performance
   cl-mpi makes no additional copies of transmitted data and has therefore the
@@ -42,13 +47,14 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
   is somewhere around 1000 machine cycles.
 
   tl;dr
+
   Comparing to C, FORTRAN or raw assembler:
   - latency increase per message: 400 nanoseconds (SBCL on a 2.4GHz Intel i7-5500U)
   - bandwidth unchanged
 
 * Authors
-  Alex Fukunaga
-  Marco Heisig
+  - Alex Fukunaga
+  - Marco Heisig
 
 * Special Thanks
   This project was funded by KONWIHR (The Bavarian Competence Network for
