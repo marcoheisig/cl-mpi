@@ -11,6 +11,7 @@
 (constant (|OMPI_MAJOR_VERSION| "OMPI_MAJOR_VERSION") :optional t)
 (constant (|OMPI_MINOR_VERSION| "OMPI_MINOR_VERSION") :optional t)
 (constant (|OMPI_RELEASE_VERSION| "OMPI_RELEASE_VERSION") :optional t)
+(constant (|MPICH_NUMVERSION| "MPICH_NUMVERSION") :optional t)
 
 ;;; standardized MPI constants
 (constant (|MPI_VERSION| "MPI_VERSION"))

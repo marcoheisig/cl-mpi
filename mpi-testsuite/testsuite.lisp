@@ -12,21 +12,28 @@
             (if (zerop rank)
                 *test-dribble*
                 (make-broadcast-stream))))
-      (let ((lisp
+      (let ((machine
+              (format nil "~A ~A"
+                      (machine-type)
+                      (machine-version)))
+            (lisp
               (format nil "~A ~A"
                       (lisp-implementation-type)
                       (lisp-implementation-version)))
             (cl-mpi
-              (format nil "version ~A"
-                      (asdf:component-version
-                       (asdf:find-system :cl-mpi))))
+              (asdf:component-version
+               (asdf:find-system :cl-mpi)))
             (mpi
-              (format nil "~A version ~A"
+              (format nil "~A ~A"
                       +mpi-implementation+
                       +mpi-implementation-version+)))
         (format *test-dribble*
-                "~%Lisp: ~A~%CL-MPI: ~A~%MPI: ~A~%"
-                lisp cl-mpi mpi))
+                "
+Machine: ~A
+Lisp:    ~A
+MPI:     ~A
+cl-mpi:  cl-mpi ~A~%"
+                machine lisp mpi cl-mpi))
       (run! 'mpi-serial-tests)
       (if (> size 1) ; check whether we run in parallel
           (run! 'mpi-parallel-tests)
