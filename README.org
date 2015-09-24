@@ -34,9 +34,15 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
 
 * Testing
   To run the testsuite:
-  =./scripts/cl-mpi-test.sh all=
+  #+BEGIN_SRC sh :results output
+  ./scripts/cl-mpi-test.sh all
+  #+END_SRC
+
   or
-  =./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>=
+
+  #+BEGIN_SRC sh
+  ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
+  #+END_SRC
 
 * Performance
   cl-mpi makes no additional copies of transmitted data and has therefore the
