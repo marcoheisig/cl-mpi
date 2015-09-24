@@ -3,9 +3,9 @@ typically used in High Performance Computing to utilize big parallel computers
 with thousands of cores. It features minimal communication overhead with a
 latency in the range of microseconds.
 
-If you have any questions or suggestions, feel free to contact me.
+If you have questions or suggestions, feel free to contact me.
 
-cl-mpi has been tested with mpich2 and openmpi.
+cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
 
 * Usage
   An MPI program must be launched with "mpirun" or "mpiexec". These commands
@@ -41,7 +41,7 @@ cl-mpi has been tested with mpich2 and openmpi.
 
   tl;dr
   Comparing to C, FORTRAN or raw assembler:
-  - latency increase per message: 400 nanoseconds (SBCL on an 2.4GHz Intel Core i7-5500U)
+  - latency increase per message: 400 nanoseconds (SBCL on a 2.4GHz Intel i7-5500U)
   - bandwidth unchanged
 
 * Authors
@@ -61,12 +61,10 @@ cl-mpi has been tested with mpich2 and openmpi.
    - get/put operations
 ** more collective operations
    - allgatherv
-   - allreduce
    - alltoall
    - alltoallw
    - allgatherv
    - scatter / scatterv
-   - reduce
    - scan
 ** MPI IO
    - make MPI IO play nicely with lisp streams, pathnames, etc.

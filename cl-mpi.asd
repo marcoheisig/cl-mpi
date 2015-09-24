@@ -11,24 +11,18 @@
 (defsystem #:cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
   :author "Marco Heisig <marco.heisig@fau.de>"
-  :version "0.5"
+  :version "0.9"
   :license "MIT"
+  :long-description
+  "cl-mpi provides CFFI bindings for the Message Passing Interface (MPI). MPI
+is typically used in High Performance Computing to utilize big parallel
+computers with thousands of cores. It features minimal communication overhead
+with a latency in the range of microseconds. "
   :defsystem-depends-on (#:cl-mpi-asdf-utilities)
   :depends-on (#:alexandria #:cffi #:static-vectors #:cl-conspack)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
   :components
   ((:module "mpi"
-    ;; Let me explain this long chain of serial dependencies: After the
-    ;; package declaration, "grovel.lisp" extracts all constants from mpi.h
-    ;; and the system MPI library is loaded via "cl-mpi-stub.c". The constants
-    ;; are then used in "configure.lisp" to set up MPI implementation
-    ;; dependent reader conditionals. "wrapper-types.lisp" integrates the MPI
-    ;; handles and error codes into Lisp objects with their CFFI
-    ;; counterparts. After the object definition, MPI related constants and
-    ;; variables can be declared in "variables.lisp". Those variables are used
-    ;; to define several helper functions in "utilities.lisp". All remaining
-    ;; files are independent of each other and correspond to the individual
-    ;; chapters of the MPI specification.
     :components
     ((:file "packages")
 
@@ -38,7 +32,7 @@
      ;; load system MPI implementation
      ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub" :depends-on ("grovel"))
 
-     ;; MPI implementation dependent *features*
+     ;; MPI implementation dependent constants
      (:file "configure" :depends-on ("grovel"))
 
      ;; CLOS wrappers for MPI handles
