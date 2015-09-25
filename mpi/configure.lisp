@@ -44,27 +44,37 @@ version string."
                  (symbol-value (find-symbol "MPICH2_NUMVERSION" '#:cl-mpi-header)))))
       (if numversion
           (numversion-to-version numversion)
-          :unknown))))
+          :unknown)))
 
-(defconstant +mpi-implementation+
-  (if (boundp '+mpi-implementation+)
-      +mpi-implementation+
+  (defun configure ()
+    (macrolet ((def (name value)
+                 `(defconstant ,name
+                    (if (boundp ',name)
+                        (symbol-value ',name)
+                        ,value))))
       (cond
         ((boundp 'cl-mpi-header::|OPEN_MPI|)
-         (defconstant +mpi-implementation-version+
-           (determine-openmpi-version))
-         :openmpi)
+         (defconstant +mpi-implementation+ :openmpi)
+         (def +mpi-implementation-version+ (determine-openmpi-version))
+         (def +mpi-object-handle-type+ 'foreign-pointer)
+         (def +mpi-object-handle-cffi-type+ :pointer))
         ((boundp 'cl-mpi-header::|MPICH|)
-         (defconstant +mpi-implementation-version+
-           (determine-mpich-version))
-         :mpich)
+         (defconstant +mpi-implementation+ :mpich)
+         (def +mpi-implementation-version+ (determine-mpich-version))
+         (def +mpi-object-handle-type+ '(signed-byte 32))
+         (def +mpi-object-handle-cffi-type+ :int))
         ((boundp 'cl-mpi-header::|MPICH2|)
-         (defconstant +mpi-implementation-version+
-           (determine-mpich2-version))
-         :mpich2)
+         (defconstant +mpi-implementation+ :mpich2)
+         (def +mpi-implementation-version+ (determine-mpich2-version))
+         (def +mpi-object-handle-type+ '(signed-byte 32))
+         (def +mpi-object-handle-cffi-type+ :int))
         (t
-         (defconstant +mpi-implementation-version+ :unknown)
-         :unknown))))
+         (defconstant +mpi-implementation+ :unknown)
+         (def +mpi-implementation-version+ :unknown)
+         (def +mpi-object-handle-type+ '(signed-byte 32))
+         (def +mpi-object-handle-cffi-type+ :int)))))
+
+  (configure))
 
 (defconstant +mpi-version+
   (if (boundp '+mpi-version+)

@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:mpi)
+(in-package #:cl-mpi)
 
 (defmpifun "MPI_Bsend" (*buf count datatype dest tag comm) :introduced "1.0")
 (defmpifun "MPI_Bsend_init" (*buf count datatype dest tag comm *request) :introduced "1.0")
@@ -183,9 +183,7 @@ mechanism such as sb-sys:with-pinned-objects."
     (setf (mem-ref request* 'mpi-request) request)
     (%mpi-wait request* status*)
     (setf (mpi-object-handle request)
-          (mem-ref request* #.(case +mpi-implementation+
-                                (:openmpi :pointer)
-                                (t :int))))
+          (mem-ref request* #.+mpi-object-handle-cffi-type+))
     request))
 
 (defun mpi-waitall (&rest requests)
@@ -199,8 +197,6 @@ mechanism such as sb-sys:with-pinned-objects."
       (loop for request in requests
             and i below n-requests do
               (setf (mpi-object-handle request)
-                    (mem-aref requests* #.(case +mpi-implementation+
-                                            (:openmpi :pointer)
-                                            (t :int))))))))
+                    (mem-aref requests* #.+mpi-object-handle-cffi-type+))))))
 
 ;; TODO make GC free MPI_Request handles automatically

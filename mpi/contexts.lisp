@@ -179,9 +179,7 @@ THE SOFTWARE.
       (setf (mem-ref handle 'mpi-group) group)
       (%mpi-group-free handle)
       (setf (mpi-object-handle group)
-            (mem-ref handle #.(case +mpi-implementation+
-                                (:openmpi :pointer)
-                                (t :int)))))))
+            (mem-ref handle #.+mpi-object-handle-cffi-type+)))))
 
 (declaim (ftype (function * (signed-byte 32)) mpi-comm-size))
 (defun mpi-comm-size (&optional (comm *standard-communicator*))

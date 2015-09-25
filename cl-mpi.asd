@@ -26,11 +26,11 @@ with a latency in the range of microseconds. "
     :components
     ((:file "packages")
 
-     ;; extract all constants from "mpi.h"
-     ("cffi-grovel:grovel-file" "grovel" :depends-on ("packages"))
-
      ;; load system MPI implementation
-     ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub" :depends-on ("grovel"))
+     ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub")
+
+     ;; extract all constants from "mpi.h"
+     ("cffi-grovel:grovel-file" "grovel" :depends-on ("packages" "cl-mpi-stub"))
 
      ;; MPI implementation dependent constants
      (:file "configure" :depends-on ("grovel"))

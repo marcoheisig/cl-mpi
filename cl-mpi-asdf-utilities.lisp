@@ -5,13 +5,26 @@
 
 (in-package #:cl-mpi-asdf-utilities)
 
-;; use "mpicc" as compiler for all mpi related cffi-grovel files
+;;; use "mpicc" as compiler for all mpi related cffi-grovel files
 (defmethod perform :around ((op cffi-grovel::process-op)
                             (c cffi-grovel:grovel-file))
   (let ((cffi-grovel::*cc* "mpicc"))
     (call-next-method)))
 
-(defclass mpi-stub (c-source-file) ())
+(defclass mpi-stub (c-source-file)
+  ((%mpi-info :initform ""
+              :accessor mpi-info)))
+
+
+(defun compute-mpi-info ()
+  "Produce some value that is EQUALP unless the MPI implementation changes."
+  (multiple-value-bind (output stderr exit-code)
+      (uiop:run-program "mpicc -show~%" :output :string
+                                        :ignore-error-status t)
+    (declare (ignore stderr))
+    (if (zerop exit-code)
+        output
+        nil)))
 
 (defmethod output-files ((o compile-op) (c mpi-stub))
   (declare (ignorable o))
@@ -38,7 +51,15 @@
               (progn
                 (format *standard-output* "; ~A~%" cmd)
                 (return-from compile-stub-library))))
-        (error 'operation-error :component c :operation o)))))
+        (error 'operation-error :component c :operation o))
+      (setf (mpi-info c) (compute-mpi-info)))))
 
 (defmethod perform ((o load-op) (c mpi-stub))
   (cffi:load-foreign-library (output-file 'compile-op c)))
+
+(defmethod operation-done-p ((o compile-op) (c mpi-stub))
+  (format t "old: ~A~%new: ~A~%" (mpi-info c) (compute-mpi-info))
+  (if (equalp (mpi-info c)
+              (compute-mpi-info))
+      (call-next-method)
+      nil))

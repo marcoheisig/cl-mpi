@@ -47,9 +47,7 @@ THE SOFTWARE.
 ;;; <CLASSNAME>-type.
 (define-foreign-type mpi-object-type ()
   () (:actual-type
-      #.(if (eq +mpi-implementation+ :openmpi)
-            :pointer
-            :int)))
+      #.+mpi-object-handle-cffi-type+))
 
 (define-foreign-type mpi-errhandler-type (mpi-object-type)
   () (:simple-parser mpi-errhandler))
@@ -88,10 +86,7 @@ THE SOFTWARE.
    (%handle
     :accessor mpi-object-handle
     :initarg :handle
-    :type
-    #.(if (eq +mpi-implementation+ :openmpi)
-          'foreign-pointer
-          '(signed-byte 32)))))
+    :type #.+mpi-object-handle-type+)))
 
 (defclass mpi-errhandler (mpi-object) ())
 
