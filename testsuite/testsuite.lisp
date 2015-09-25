@@ -1,4 +1,4 @@
-(in-package :mpi-testsuite)
+(in-package :cl-mpi-testsuite)
 
 (defun run-cl-mpi-testsuite ()
   (mpi-init)

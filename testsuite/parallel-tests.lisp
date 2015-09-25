@@ -1,4 +1,4 @@
-(in-package :mpi-testsuite)
+(in-package :cl-mpi-testsuite)
 
 (in-suite mpi-parallel-tests)
 

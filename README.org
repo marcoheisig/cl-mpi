@@ -80,6 +80,7 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
    - allgatherv
    - scatter / scatterv
    - scan
+** examples
 ** MPI IO
    - make MPI IO play nicely with lisp streams, pathnames, etc.
 ** full MPI benchmark suite

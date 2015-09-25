@@ -5,10 +5,10 @@
   :depends-on (#:cl-mpi #:fiveam #:cffi)
   :perform (test-op (o s)
                     (uiop:symbol-call
-                     '#:mpi-testsuite '#:run-cl-mpi-testsuite))
+                     '#:cl-mpi-testsuite '#:run-cl-mpi-testsuite))
   :serial t
   :components
-  ((:module "mpi-testsuite"
+  ((:module "testsuite"
     :components
             ((:file "packages")
              (:file "serial-tests")

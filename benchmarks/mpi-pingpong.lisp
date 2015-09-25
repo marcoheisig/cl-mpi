@@ -1,5 +1,5 @@
 
-(in-package :mpi-benchmarks)
+(in-package :cl-mpi-benchmarks)
 
 (defun pingpong (msg-size buf iterations)
   (declare (type (signed-byte 32) msg-size iterations)

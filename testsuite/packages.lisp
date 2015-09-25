@@ -1,8 +1,9 @@
-(defpackage :mpi-testsuite
+(defpackage :cl-mpi-testsuite
+  (:nicknames #:mpi-testsuite)
   (:use :cl :mpi :5am :uiop :cffi :static-vectors)
   (:export #:run-cl-mpi-testsuite))
 
-(in-package :mpi-testsuite)
+(in-package :cl-mpi-testsuite)
 
 (def-suite mpi-testsuite
   :description "All MPI related tests.")

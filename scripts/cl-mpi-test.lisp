@@ -5,9 +5,9 @@
   (unwind-protect
        (cond
          ((string-equal (first argv) "benchmark")
-          (mpi-benchmarks:run-benchmarks))
+          (cl-mpi-benchmarks:run-benchmarks))
          (t
-          (mpi-testsuite:run-cl-mpi-testsuite)))
+          (cl-mpi-testsuite:run-cl-mpi-testsuite)))
     (ignore-errors
      (uiop:symbol-call "CL-MPI" "MPI-FINALIZE")
      (uiop:quit 0))))

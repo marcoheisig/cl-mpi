@@ -1,13 +1,10 @@
-(defpackage :mpi-benchmarks
-  (:documentation "benchmark suite for MPI under Lisp")
-  (:nicknames #:cl-mpi-benchmarks)
-  (:use #:cl #:mpi #:uiop #:cffi :static-vectors)
-  (:export run-benchmarks))
-
-(in-package :mpi-benchmarks)
+(in-package :cl-mpi-benchmarks)
 
 (defun run-benchmarks ()
   (mpi-init)
+  (unless (> 1 (mpi-comm-size))
+    (format *error-output* "The MPI Benchmars can only be run in parallel.")
+    (return-from run-benchmarks nil))
   (let ((buf (make-static-vector
               (expt 2 25)
               :element-type '(unsigned-byte 8)
