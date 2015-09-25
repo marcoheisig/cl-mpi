@@ -137,5 +137,5 @@
    #:mpi-receive-anything
    #:mpi-broadcast-anything))
 
-(defpackage #:mpi-header
+(defpackage #:cl-mpi-header
   (:documentation "All constants extracted from mpi.h"))

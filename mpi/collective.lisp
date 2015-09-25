@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:mpi)
+(in-package #:cl-mpi)
 
 ;;; A.2.3 Collective Communication C Bindings
 

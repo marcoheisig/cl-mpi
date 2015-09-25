@@ -1,5 +1,5 @@
 (defsystem #:cl-mpi-benchmarks
-  :depends-on (:cl-mpi :cffi)
+  :depends-on (#:cl-mpi #:cffi)
   :perform (test-op (o s)
                     (uiop:symbol-call
                      :cl-mpi-benchmarks  '#:run-benchmarks))

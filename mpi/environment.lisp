@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:mpi)
+(in-package #:cl-mpi)
 
 (defcfun "MPI_Wtime" :double
   "Returns a (double) floating-point number of seconds, representing elapsed

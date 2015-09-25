@@ -1,7 +1,7 @@
 ;;; -*- Mode: Lisp; indent-tabs-mode: nil -*-
 ;;; Copyright (C) 2014  Marco Heisig <marco.heisig@fau.de>
 
-(in-package #:mpi)
+(in-package #:cl-mpi)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
@@ -26,22 +26,22 @@ version string."
       (format nil "~D.~D.~D.~D.~D" maj min rev ext enr)))
 
   (defun determine-openmpi-version ()
-    (let* ((maj (symbol-value (find-symbol "OMPI_MAJOR_VERSION" "MPI-HEADER")))
-           (min (symbol-value (find-symbol "OMPI_MINOR_VERSION" "MPI-HEADER"))))
+    (let* ((maj (symbol-value (find-symbol "OMPI_MAJOR_VERSION" '#:cl-mpi-header)))
+           (min (symbol-value (find-symbol "OMPI_MINOR_VERSION" '#:cl-mpi-header))))
       (if (and maj min)
           (format nil "~D.~D" maj min)
           :unknown)))
 
   (defun determine-mpich-version ()
-    (let ((numversion (symbol-value (find-symbol "MPICH_NUMVERSION" "MPI-HEADER"))))
+    (let ((numversion (symbol-value (find-symbol "MPICH_NUMVERSION" '#:cl-mpi-header))))
       (if numversion
           (numversion-to-version numversion)
           :unknown)))
 
   (defun determine-mpich2-version ()
     (let* ((numversion
-             (or (symbol-value (find-symbol "MPICH_NUMVERSION" "MPI-HEADER"))
-                 (symbol-value (find-symbol "MPICH2_NUMVERSION" "MPI-HEADER")))))
+             (or (symbol-value (find-symbol "MPICH_NUMVERSION" '#:cl-mpi-header))
+                 (symbol-value (find-symbol "MPICH2_NUMVERSION" '#:cl-mpi-header)))))
       (if numversion
           (numversion-to-version numversion)
           :unknown))))
@@ -50,15 +50,15 @@ version string."
   (if (boundp '+mpi-implementation+)
       +mpi-implementation+
       (cond
-        ((boundp 'mpi-header::|OPEN_MPI|)
+        ((boundp 'cl-mpi-header::|OPEN_MPI|)
          (defconstant +mpi-implementation-version+
            (determine-openmpi-version))
          :openmpi)
-        ((boundp 'mpi-header::|MPICH|)
+        ((boundp 'cl-mpi-header::|MPICH|)
          (defconstant +mpi-implementation-version+
            (determine-mpich-version))
          :mpich)
-        ((boundp 'mpi-header::|MPICH2|)
+        ((boundp 'cl-mpi-header::|MPICH2|)
          (defconstant +mpi-implementation-version+
            (determine-mpich2-version))
          :mpich2)
@@ -70,18 +70,18 @@ version string."
   (if (boundp '+mpi-version+)
       +mpi-version+
       (format nil "~D.~D"
-              mpi-header::|MPI_VERSION|
-              mpi-header::|MPI_SUBVERSION|)))
+              cl-mpi-header::|MPI_VERSION|
+              cl-mpi-header::|MPI_SUBVERSION|)))
 
-(defconstant +mpi-max-error-string+ mpi-header::|MPI_MAX_ERROR_STRING|)
-(defconstant +mpi-max-processor-name+ mpi-header::|MPI_MAX_PROCESSOR_NAME|)
-(defconstant +mpi-any-tag+ mpi-header::|MPI_ANY_TAG|)
-(defconstant +mpi-any-source+ mpi-header::|MPI_ANY_SOURCE|)
-(defconstant +mpi-proc-null+ mpi-header::|MPI_PROC_NULL|)
-(defconstant +mpi-root+ mpi-header::|MPI_ROOT|)
-(defconstant +mpi-undefined+ mpi-header::|MPI_UNDEFINED|)
+(defconstant +mpi-max-error-string+ cl-mpi-header::|MPI_MAX_ERROR_STRING|)
+(defconstant +mpi-max-processor-name+ cl-mpi-header::|MPI_MAX_PROCESSOR_NAME|)
+(defconstant +mpi-any-tag+ cl-mpi-header::|MPI_ANY_TAG|)
+(defconstant +mpi-any-source+ cl-mpi-header::|MPI_ANY_SOURCE|)
+(defconstant +mpi-proc-null+ cl-mpi-header::|MPI_PROC_NULL|)
+(defconstant +mpi-root+ cl-mpi-header::|MPI_ROOT|)
+(defconstant +mpi-undefined+ cl-mpi-header::|MPI_UNDEFINED|)
 
 (defconstant +mpi-status-ignore+
   (if (boundp '+mpi-status-ignore+)
       (symbol-value '+mpi-status-ignore+)
-      (make-pointer mpi-header::|MPI_STATUS_IGNORE|)))
+      (make-pointer cl-mpi-header::|MPI_STATUS_IGNORE|)))

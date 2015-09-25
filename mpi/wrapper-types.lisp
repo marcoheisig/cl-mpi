@@ -129,7 +129,7 @@ dependent handle to that MPI constant."
           found))
       (t
        `(symbol-value
-         (find-symbol name '#:mpi-header)))))
+         (find-symbol name '#:cl-mpi-header)))))
 
 (defmethod make-load-form ((object mpi-object) &optional env)
   (declare (ignore env))

@@ -2,7 +2,7 @@
 
 (include "mpi.h")
 
-(in-package #:mpi-header)
+(in-package #:cl-mpi-header)
 
 ;;; optional and MPI implementation specific constants
 (constant (|MPICH2| "MPICH") :optional t)

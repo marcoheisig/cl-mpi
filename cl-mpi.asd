@@ -19,7 +19,7 @@ is typically used in High Performance Computing to utilize big parallel
 computers with thousands of cores. It features minimal communication overhead
 with a latency in the range of microseconds. "
   :defsystem-depends-on (#:cl-mpi-asdf-utilities)
-  :depends-on (#:alexandria #:cffi #:static-vectors #:cl-conspack)
+  :depends-on (#:alexandria #:cffi #:static-vectors)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
   :components
   ((:module "mpi"
@@ -50,5 +50,4 @@ with a latency in the range of microseconds. "
      (:file "contexts" :depends-on ("utilities"))
      (:file "environment" :depends-on ("utilities"))
      (:file "point-to-point" :depends-on ("utilities"))
-     (:file "one-sided" :depends-on ("utilities"))
-     (:file "extensions" :depends-on ("utilities"))))))
+     (:file "one-sided" :depends-on ("utilities"))))))
