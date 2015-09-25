@@ -45,20 +45,20 @@
       (block compile-stub-library
         (dolist (cmd possible-commands)
           (if (multiple-value-bind (stdout stderr exit-code)
-                  (uiop:run-program cmd :ignore-error-status t)
-                (declare (ignore stdout stderr))
+                  (uiop:run-program cmd :ignore-error-status t
+                                        :error-output :string)
+                (declare (ignore stdout))
                 (zerop exit-code))
               (progn
                 (format *standard-output* "; ~A~%" cmd)
                 (return-from compile-stub-library))))
-        (error 'operation-error :component c :operation o))
+        (error "Failed to compile c-mpi-stub.c - please check mpicc."))
       (setf (mpi-info c) (compute-mpi-info)))))
 
 (defmethod perform ((o load-op) (c mpi-stub))
   (cffi:load-foreign-library (output-file 'compile-op c)))
 
 (defmethod operation-done-p ((o compile-op) (c mpi-stub))
-  (format t "old: ~A~%new: ~A~%" (mpi-info c) (compute-mpi-info))
   (if (equalp (mpi-info c)
               (compute-mpi-info))
       (call-next-method)

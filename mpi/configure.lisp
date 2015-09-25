@@ -25,23 +25,28 @@ version string."
            (enr (read-from-string (subseq numstr 6 7))))
       (format nil "~D.~D.~D.~D.~D" maj min rev ext enr)))
 
+  (defun header-symbol-value (name)
+    (let ((sym (find-symbol name '#:cl-mpi-header)))
+      (when (and sym (boundp sym))
+        (symbol-value sym))))
+
   (defun determine-openmpi-version ()
-    (let* ((maj (symbol-value (find-symbol "OMPI_MAJOR_VERSION" '#:cl-mpi-header)))
-           (min (symbol-value (find-symbol "OMPI_MINOR_VERSION" '#:cl-mpi-header))))
+    (let* ((maj (header-symbol-value "OMPI_MAJOR_VERSION"))
+           (min (header-symbol-value "OMPI_MINOR_VERSION")))
       (if (and maj min)
           (format nil "~D.~D" maj min)
           :unknown)))
 
   (defun determine-mpich-version ()
-    (let ((numversion (symbol-value (find-symbol "MPICH_NUMVERSION" '#:cl-mpi-header))))
+    (let ((numversion (header-symbol-value "MPICH_NUMVERSION")))
       (if numversion
           (numversion-to-version numversion)
           :unknown)))
 
   (defun determine-mpich2-version ()
     (let* ((numversion
-             (or (symbol-value (find-symbol "MPICH_NUMVERSION" '#:cl-mpi-header))
-                 (symbol-value (find-symbol "MPICH2_NUMVERSION" '#:cl-mpi-header)))))
+             (or (header-symbol-value "MPICH_NUMVERSION")
+                 (header-symbol-value "MPICH2_NUMVERSION"))))
       (if numversion
           (numversion-to-version numversion)
           :unknown)))
