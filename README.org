@@ -69,7 +69,7 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
 
   Big thanks to Nicolas Neuss for all the useful suggestions.
 
-* TODOs (roughly in orde of priority)
+* TODOs (roughly in order of priority)
 ** one-sided MPI 3.0 communications
    - memory windows
    - get/put operations

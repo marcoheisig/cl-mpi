@@ -1,0 +1,14 @@
+
+cl-mpi can be loaded with ASDF (www.common-lisp.net/project/asdf/). However it
+has some non-Lisp dependencies:
+
+* An MPI implementation
+  On your supercomputer, there is usually some vendor-specific version of
+  MPI. On your desktop system, there are plenty of free MPI implementations
+  like OpenMPI (http://www.open-mpi.org/) or MPICH (http://www.mpich.org/)
+  that you can install manually or with a package manager.
+* A C Compiler + mpicc
+  Usually MPI provides a small wrapper around the systems C compiler named
+  "mpicc". If cl-mpi fails to load, it is most certainly because there is no
+  program named mpicc or mpicc is not able to produce shared libraries. If you
+  encounter this problem, please let me know or send me a patch.
