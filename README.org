@@ -9,97 +9,98 @@ If you have questions or suggestions, feel free to contact me.
 
 cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
 
-* Usage
-  An MPI program must be launched with =mpirun= or =mpiexec=. These commands
-  spawn multiple processes depending on your system and commandline
-  parameters. Each process is identical, except that it has a unique rank that
-  can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
-  =(- (MPI-COMM-SIZE) 1)=.
+** Usage
+   An MPI program must be launched with =mpirun= or =mpiexec=. These commands
+   spawn multiple processes depending on your system and commandline
+   parameters. Each process is identical, except that it has a unique rank that
+   can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
+   =(- (MPI-COMM-SIZE) 1)=.
 
-  A wide range of communication functions is avilable to transmit messages
-  between different ranks.
+   A wide range of communication functions is avilable to transmit messages
+   between different ranks.
 
-  In case you change the MPI implementation of your system, cl-mpi needs to be
-  rebuilt. To do this, simply run
-  #+BEGIN_SRC lisp
-    (asdf:load-system :cl-mpi :force t)
-  #+END_SRC
+   In case you change the MPI implementation of your system, cl-mpi needs to be
+   rebuilt. To do this, simply run
+   #+BEGIN_SRC lisp
+     (asdf:load-system :cl-mpi :force t)
+   #+END_SRC
 
-  Sometimes (e.g. on SBCL) it is necessary to perform a serial
-  =(asdf:load-system :cl-mpi)= on a node before the MPI parallel ones, because
-  asdf fails if operations are executed concurrently from different lisp
-  images on the same machine. The easiest aproach however is to build
-  standalone executables and start those with =mpiexec=. See the =scripts/=
-  directory for an example.
+   Sometimes (e.g. on SBCL) it is necessary to perform a serial
+   =(asdf:load-system :cl-mpi)= on a node before the MPI parallel ones, because
+   asdf fails if operations are executed concurrently from different lisp
+   images on the same machine. The easiest aproach however is to build
+   standalone executables and start those with =mpiexec=. See the =scripts/=
+   directory for an example.
 
-* Testing
-  To run the testsuite:
-  #+BEGIN_SRC sh :results output
-  ./scripts/cl-mpi-test.sh all
-  #+END_SRC
+** Testing
+   To run the testsuite:
+   #+BEGIN_SRC sh :results output
+   ./scripts/cl-mpi-test.sh all
+   #+END_SRC
 
-  or
+   or
 
-  #+BEGIN_SRC sh
-  ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
-  #+END_SRC
+   #+BEGIN_SRC sh
+   ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
+   #+END_SRC
 
-* Performance
-  cl-mpi makes no additional copies of transmitted data and has therefore the
-  same bandwidth as any other language (C, FORTRAN). However the convenience
-  of error handling, automatic inference of the message types and safe
-  computation of memory locations adds a little overhead to each message. The
-  exact overhead varies depending on the Lisp implementation and platform but
-  is somewhere around 1000 machine cycles.
+** Performance
+   cl-mpi makes no additional copies of transmitted data and has therefore the
+   same bandwidth as any other language (C, FORTRAN). However the convenience
+   of error handling, automatic inference of the message types and safe
+   computation of memory locations adds a little overhead to each message. The
+   exact overhead varies depending on the Lisp implementation and platform but
+   is somewhere around 1000 machine cycles.
 
-  tl;dr
+   tl;dr
 
-  Comparing to C, FORTRAN or raw assembler:
-  - latency increase per message: 400 nanoseconds (SBCL on a 2.4GHz Intel i7-5500U)
-  - bandwidth unchanged
+   Comparing to C, FORTRAN or raw assembler:
+   - latency increase per message: 400 nanoseconds (SBCL on a 2.4GHz Intel i7-5500U)
+   - bandwidth unchanged
 
-* Authors
-  - Alex Fukunaga
-  - Marco Heisig
+** Authors
+   - Alex Fukunaga
+   - Marco Heisig
 
-* Special Thanks
-  This project was funded by KONWIHR (The Bavarian Competence Network for
-  Technical and Scientific High Performance Computing) and the Chair for
-  Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
+** Special Thanks
+   This project was funded by KONWIHR (The Bavarian Competence Network for
+   Technical and Scientific High Performance Computing) and the Chair for
+   Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
 
-  Big thanks to Nicolas Neuss for all the useful suggestions.
+   Big thanks to Nicolas Neuss for all the useful suggestions.
 
-* TODOs (roughly in order of priority)
-** one-sided MPI 3.0 communications
-   - memory windows
-   - get/put operations
-** more collective operations
-   - allgatherv
-   - alltoall
-   - alltoallw
-   - allgatherv
-   - scatter / scatterv
-   - scan
-** examples
-** MPI IO
-   - make MPI IO play nicely with lisp streams, pathnames, etc.
-** full MPI benchmark suite
-   - pingping
-   - exchange
-   - reduce_scatter
-   - allgather/allgatherv
-   - gather
-   - scatter / scatterv
-   - alltoall / alltoallv
-   - ...-ANYTHING MPI extensions
-** MPI extensions
-   - coarrays
-   - checkpointing
-   - allow different serialization tools, like cl-store
-** testsuite improvements
-   - one test per function
-   - failure of individual ranks should be propagated to all ranks so that it
-     is enough to see whether rank zero passes the testsuite
-   - at least one real application test, e.g. a finite-difference solver
-** datatype handling
-   - model the memory of Lisp datastructures with MPI_Datatypes
+** TODOs
+   This TODO list is roughly in order of priority.
+*** one-sided MPI 3.0 communications
+    - memory windows
+    - get/put operations
+*** more collective operations
+    - allgatherv
+    - alltoall
+    - alltoallw
+    - allgatherv
+    - scatter / scatterv
+    - scan
+*** write a manual
+*** testsuite improvements
+    - one test per function
+    - failure of individual ranks should be propagated to all ranks so that it
+      is enough to see whether rank zero passes the testsuite
+    - at least one real application test, e.g. a finite-difference solver
+*** MPI IO
+    - make MPI IO play nicely with lisp streams, pathnames, etc.
+*** full MPI benchmark suite
+    - pingping
+    - exchange
+    - reduce_scatter
+    - allgather/allgatherv
+    - gather
+    - scatter / scatterv
+    - alltoall / alltoallv
+    - ...-ANYTHING MPI extensions
+*** MPI extensions
+    - coarrays
+    - checkpointing
+    - allow different serialization tools, like cl-store
+*** datatype handling
+    - model the memory of Lisp datastructures with MPI_Datatypes

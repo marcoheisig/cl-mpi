@@ -85,7 +85,7 @@ be 0.001")
      *mpi-constants*)
     (%mpi-init (null-pointer) (null-pointer))
     ;; by default MPI reacts to each failure by crashing the process. This is
-    ;; not the Lisp way of doing things. The following call makes error
+    ;; not the Lisp way of doing things. The following call makes errors
     ;; non-fatal in most cases.
     (%mpi-comm-set-errhandler +mpi-comm-world+ +mpi-errors-return+)))
 

@@ -39,6 +39,7 @@ cl-mpi:  cl-mpi ~A~%"
           (run! 'mpi-parallel-tests)
           (format *test-dribble* "
 Note: You tested cl-mpi with only one process. Many testcases require a
-      parallel run and have been skipped. Rerun the program with \"$ mpirun
-      -np 2 YOUR_PROGRAM \" to perform all tests.
+      parallel run and have been skipped. Rerun the program with
+      $ mpiexec -np 2 YOUR_PROGRAM
+      to perform all tests.
 ")))))
