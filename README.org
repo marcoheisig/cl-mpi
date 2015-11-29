@@ -1,9 +1,12 @@
 #+TITLE: cl-mpi
 
-cl-mpi provides CFFI bindings for the Message Passing Interface (MPI). MPI is
-typically used in High Performance Computing to utilize big parallel computers
-with thousands of cores. It features minimal communication overhead with a
-latency in the range of microseconds.
+cl-mpi provides convenient CFFI bindings for the Message Passing
+Interface (MPI). MPI is typically used in High Performance Computing to
+utilize big parallel computers with thousands of cores. It features minimal
+communication overhead with a latency in the range of microseconds. In
+comparison to the C or FORTRAN interface of MPI, cl-mpi relieves the
+programmer from working with raw pointers to memory and a plethora of
+mandatory function arguments.
 
 If you have questions or suggestions, feel free to contact me.
 

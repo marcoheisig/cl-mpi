@@ -14,10 +14,13 @@
   :version "0.9"
   :license "MIT"
   :long-description
-  "cl-mpi provides CFFI bindings for the Message Passing Interface (MPI). MPI
-is typically used in High Performance Computing to utilize big parallel
-computers with thousands of cores. It features minimal communication overhead
-with a latency in the range of microseconds. "
+  "cl-mpi provides convenient CFFI bindings for the Message Passing
+Interface (MPI). MPI is typically used in High Performance Computing to
+utilize big parallel computers with thousands of cores. It features minimal
+communication overhead with a latency in the range of microseconds. In
+comparison to the C or FORTRAN interface of MPI, cl-mpi relieves the
+programmer from working with raw pointers to memory and a plethora of
+mandatory function arguments."
   :defsystem-depends-on (#:cl-mpi-asdf-utilities)
   :depends-on (#:alexandria #:cffi #:static-vectors)
   :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
