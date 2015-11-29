@@ -1,0 +1,24 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(defpackage :ros.script.cl-mpi.3657791497
+  (:use :cl))
+
+(in-package :ros.script.cl-mpi.3657791497)
+
+(ql:quickload
+ '(:cffi-grovel :uiop :cl-mpi-benchmarks :cl-mpi-testsuite)
+ :silent t)
+
+(defun main (&rest argv)
+  (unwind-protect
+       (cond
+         ((string-equal (first argv) "benchmark")
+          (cl-mpi-benchmarks:run-benchmarks))
+         (t
+          (cl-mpi-testsuite:run-cl-mpi-testsuite)))
+    (ignore-errors
+     (uiop:symbol-call "CL-MPI" "MPI-FINALIZE")
+     (uiop:quit 0))))

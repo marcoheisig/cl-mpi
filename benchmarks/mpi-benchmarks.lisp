@@ -2,7 +2,7 @@
 
 (defun run-benchmarks ()
   (mpi-init)
-  (unless (> 1 (mpi-comm-size))
+  (when (= 1 (mpi-comm-size))
     (format *error-output* "The MPI Benchmars can only be run in parallel.")
     (return-from run-benchmarks nil))
   (let ((buf (make-static-vector
