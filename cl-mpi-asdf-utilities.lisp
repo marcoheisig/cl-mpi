@@ -12,8 +12,8 @@
               :accessor mpi-info)))
 
 ;;; use "mpicc" as compiler for all mpi related cffi-grovel files
-(defmethod perform :around ((op cffi-grovel::process-op)
-                            (c grovel-mpi-file))
+(defmethod perform ((op cffi-grovel::process-op)
+                    (c grovel-mpi-file))
   (let ((cffi-grovel::*cc* "mpicc"))
     (call-next-method)))
 
