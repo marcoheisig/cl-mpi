@@ -1,4 +1,7 @@
 (defsystem #:cl-mpi-benchmarks
+  :author "Marco Heisig <marco.heisig@fau.de>"
+  :version "0.9"
+  :license "MIT"
   :depends-on (#:cl-mpi #:cffi)
   :perform (test-op (o s)
                     (uiop:symbol-call
