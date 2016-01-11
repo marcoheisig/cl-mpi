@@ -1,20 +1,21 @@
 ;;; Extend ASDF and the CFFI groveller to be MPI aware
 (defpackage #:cl-mpi-asdf-utilities
   (:use #:asdf #:cl)
-  (:export #:mpi-stub))
+  (:export #:mpi-stub #:grovel-mpi-file))
 
 (in-package #:cl-mpi-asdf-utilities)
 
-;;; use "mpicc" as compiler for all mpi related cffi-grovel files
-(defmethod perform :around ((op cffi-grovel::process-op)
-                            (c cffi-grovel:grovel-file))
-  (let ((cffi-grovel::*cc* "mpicc"))
-    (call-next-method)))
+(defclass grovel-mpi-file (cffi-grovel:grovel-file) ())
 
 (defclass mpi-stub (c-source-file)
   ((%mpi-info :initform ""
               :accessor mpi-info)))
 
+;;; use "mpicc" as compiler for all mpi related cffi-grovel files
+(defmethod perform :around ((op cffi-grovel::process-op)
+                            (c grovel-mpi-file))
+  (let ((cffi-grovel::*cc* "mpicc"))
+    (call-next-method)))
 
 (defun compute-mpi-info ()
   "Produce some value that is EQUALP unless the MPI implementation changes."

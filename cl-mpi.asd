@@ -33,7 +33,7 @@ mandatory function arguments."
      ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub")
 
      ;; extract all constants from "mpi.h"
-     ("cffi-grovel:grovel-file" "grovel" :depends-on ("packages" "cl-mpi-stub"))
+     ("cl-mpi-asdf-utilities:grovel-mpi-file" "grovel" :depends-on ("packages" "cl-mpi-stub"))
 
      ;; MPI implementation dependent constants
      (:file "configure" :depends-on ("grovel"))
