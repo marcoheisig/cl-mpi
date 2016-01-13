@@ -1,6 +1,6 @@
 ;;; Extend ASDF and the CFFI groveller to be MPI aware
 (defpackage #:cl-mpi-asdf-utilities
-  (:use #:asdf #:cl)
+  (:use #:asdf #:cl #:uiop)
   (:export #:mpi-stub #:grovel-mpi-file))
 
 (in-package #:cl-mpi-asdf-utilities)
@@ -14,7 +14,14 @@
 ;;; use "mpicc" as compiler for all mpi related cffi-grovel files
 (defmethod perform ((op cffi-grovel::process-op)
                     (c grovel-mpi-file))
-  (let ((cffi-grovel::*cc* "mpicc"))
+  (let ((cc (getenv "CC"))
+        (cffi-grovel::*cc* "mpicc"))
+    (unless (or (not cc)
+                (string-equal cc "mpicc"))
+      (warn
+       (format nil
+        "The environment variable CC with value ~A overrides the recommended
+        compiler mpicc. Some headers and libraries might not get found." cc)))
     (call-next-method)))
 
 (defun compute-mpi-info ()
@@ -48,7 +55,7 @@
           (if (multiple-value-bind (stdout stderr exit-code)
                   (uiop:run-program cmd :ignore-error-status t
                                         :error-output :string)
-                (declare (ignore stdout))
+                (declare (ignore stdout stderr))
                 (zerop exit-code))
               (progn
                 (format *standard-output* "; ~A~%" cmd)
