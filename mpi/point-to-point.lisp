@@ -166,6 +166,9 @@ mechanism such as sb-sys:with-pinned-objects."
 (defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
+  "Check whether a message with matching TAG has been sent on the
+communicator COMM. If so, return the size of the incoming message in
+bytes and the TAG of the sender."
   (declare (type (signed-byte 32) source tag)
            (type mpi-comm comm))
   (with-foreign-object (status '(:struct mpi-status))

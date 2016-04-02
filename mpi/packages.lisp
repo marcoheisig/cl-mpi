@@ -84,6 +84,9 @@
    #:*standard-communicator*
    #:mpi-null-p
 
+   ;; utilities.lisp
+   #:with-static-vectors
+
    ;; datatypes.lisp
    #:mpi-type-size
 

@@ -200,6 +200,14 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
       ,@(loop for binding in bindings
               collect `(mem-ref ,@binding)))))
 
+(defmacro with-static-vectors (specs &body body)
+  "Wrap BODY into multiple invocations of WITH-STATIC-VECTOR."
+  (if (null specs)
+      `(progn ,@body)
+      `(with-static-vector ,(car specs)
+         (with-static-vectors ,(cdr specs)
+           ,@body))))
+
 (defun reload-mpi-libraries ()
   "Load all MPI related libraries again. This might be necessary after a
 session is resumed from a Lisp image"
