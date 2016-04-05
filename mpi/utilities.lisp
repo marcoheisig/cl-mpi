@@ -63,7 +63,7 @@ THE SOFTWARE.
            ((:pointer mpi-op) *op)
            ((:pointer mpi-message) *message)
            ((:pointer mpi-request) *request)
-           ((:pointer mpi-comm) *newcomm)
+           ((:pointer mpi-comm) *newcomm *comm)
            ((:pointer mpi-group) *newgroup *group)
            ((:pointer mpi-datatype) *newtype)
            ((:pointer (:struct mpi-status)) statuses)
@@ -223,3 +223,12 @@ session is resumed from a Lisp image"
    (asdf:output-file
     'asdf:compile-op
     (asdf:find-component "cl-mpi" '("mpi" . "cl-mpi-stub")))))
+
+(defmacro with-fresh-mpi-context (&body body)
+  "Execute body with *STANDARD-COMMUNICATOR* bound to a new unique
+communicator. This prevents errors within BODY to affect other parts of the
+program."
+  (let ((*standard-communicator* (mpi-comm-dup)))
+    (unwind-protect
+         `(progn ,@body)
+      (mpi-comm-free *standard-communicator*))))

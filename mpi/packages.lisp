@@ -86,6 +86,7 @@
 
    ;; utilities.lisp
    #:with-static-vectors
+   #:with-fresh-mpi-context
 
    ;; datatypes.lisp
    #:mpi-type-size
@@ -111,6 +112,7 @@
    #:mpi-comm-rank
    #:mpi-comm-create
    #:mpi-comm-dup
+   #:mpi-comm-free
 
    ;; environment.lisp
    #:mpi-wtime
