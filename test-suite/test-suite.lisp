@@ -1,4 +1,4 @@
-(in-package :cl-mpi-testsuite)
+(in-package :cl-mpi-test-suite)
 
 (defun print-test-suite-banner (destination)
   (let ((machine
@@ -32,7 +32,7 @@ cl-mpi:  cl-mpi ~A~%"
                (make-broadcast-stream))))
      ,@body))
 
-(defun run-cl-mpi-testsuite ()
+(defun run-cl-mpi-test-suite ()
   (mpi-init)
   (assert (mpi-initialized))
   (let ((size (mpi-comm-size))

@@ -36,7 +36,7 @@ for LISP in $LISP_IMPLEMENTATIONS; do
     echo "Building $LISP image $IMAGE..."
 
         cl-launch --lisp $LISP \
-                  -Q -s cl-mpi -s cl-mpi-testsuite -s cl-mpi-benchmarks \
+                  -Q -s cl-mpi -s cl-mpi-test-suite -s cl-mpi-benchmarks \
                   -o $IMAGE -d $IMAGE -L $BASEDIR/cl-mpi-test.lisp -E main
     echo "...$LISP image complete"
     echo "========================================="

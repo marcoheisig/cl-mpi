@@ -1,4 +1,4 @@
-(in-package :cl-mpi-testsuite)
+(in-package :cl-mpi-test-suite)
 
 (in-suite mpi-parallel-tests)
 
@@ -16,7 +16,7 @@
        (- rank 1)))))
 
 ;;; The parallel tests must form a serial dependency chain so that their order
-;;; is deterministic. Otherwise the parallel testsuite can deadlock.
+;;; is deterministic. Otherwise the parallel test suite can deadlock.
 
 (test (mpi-barrier)
   "synchronize all processes with multiple MPI barriers."

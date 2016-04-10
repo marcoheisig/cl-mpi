@@ -23,7 +23,7 @@ programmer from working with raw pointers to memory and a plethora of
 mandatory function arguments."
   :defsystem-depends-on (#:cl-mpi-asdf-utilities)
   :depends-on (#:alexandria #:cffi #:static-vectors)
-  :in-order-to ((test-op (test-op "cl-mpi-testsuite")))
+  :in-order-to ((test-op (test-op "cl-mpi-test-suite")))
   :components
   ((:module "mpi"
     :components
