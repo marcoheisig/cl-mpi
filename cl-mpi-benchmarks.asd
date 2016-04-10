@@ -8,7 +8,7 @@
                      :cl-mpi-benchmarks  '#:run-benchmarks))
   :components
   ((:module "benchmarks"
-            :components
-            ((:file "package")
-             (:file "mpi-pingpong" :depends-on ("package"))
-             (:file "mpi-benchmarks" :depends-on ("mpi-pingpong"))))))
+    :components
+    ((:file "package")
+     (:file "mpi-pingpong" :depends-on ("package"))
+     (:file "mpi-benchmarks" :depends-on ("mpi-pingpong"))))))

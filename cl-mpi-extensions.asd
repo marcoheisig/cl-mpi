@@ -3,6 +3,6 @@
   :license "MIT"
   :components
   ((:module "extensions"
-            :components
-            ((:file "package")
-             (:file "transmit-anything" :depends-on ("package"))))))
+    :components
+    ((:file "package")
+     (:file "transmit-anything" :depends-on ("package"))))))

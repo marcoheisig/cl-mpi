@@ -11,7 +11,7 @@
   :components
   ((:module "testsuite"
     :components
-            ((:file "packages")
-             (:file "serial-tests")
-             (:file "parallel-tests")
-             (:file "testsuite")))))
+    ((:file "packages")
+     (:file "serial-tests")
+     (:file "parallel-tests")
+     (:file "testsuite")))))

@@ -15,3 +15,7 @@
 (def-suite mpi-parallel-tests
   :in mpi-testsuite
   :description "CL-MPI tests that need more than one participating process.")
+
+(def-suite mpi-stress-tests
+  :in mpi-testsuite
+  :description "CL-MPI tests that require a long time to run.")

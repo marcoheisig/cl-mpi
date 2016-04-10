@@ -114,13 +114,3 @@
           (mpi-waitall
            request
            (mpi-irecv dst self :tag 10)))))))
-
-(test (serial-mpi-request-stresstest)
-  "Check whether the handling of MPI-REQUEST objects has memory leaks."
-  (let ((self (mpi-comm-rank)))
-    (with-static-vectors ((src 1 :element-type 'single-float)
-                          (dst 1 :element-type 'single-float))
-      (loop repeat 10000 do
-        (mpi-waitall
-         (mpi-irecv dst self)
-         (mpi-isend src self))))))

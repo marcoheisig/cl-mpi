@@ -1,5 +1,37 @@
 (in-package :cl-mpi-testsuite)
 
+(defun print-test-suite-banner (destination)
+  (let ((machine
+          (format nil "~A ~A"
+                  (machine-type)
+                  (machine-version)))
+        (lisp
+          (format nil "~A ~A"
+                  (lisp-implementation-type)
+                  (lisp-implementation-version)))
+        (cl-mpi
+          (asdf:component-version
+           (asdf:find-system :cl-mpi)))
+        (mpi
+          (format nil "~A ~A"
+                  +mpi-implementation+
+                  +mpi-implementation-version+)))
+    (format destination
+            "== Testing CL-MPI ==
+Machine: ~A
+Lisp:    ~A
+MPI:     ~A
+cl-mpi:  cl-mpi ~A~%"
+            machine lisp mpi cl-mpi)))
+
+(defmacro with-single-output (&body body)
+  "Disable output on all processes but the one with MPI rank zero."
+  `(let ((*test-dribble*
+           (if (zerop (mpi-comm-rank))
+               *test-dribble*
+               (make-broadcast-stream))))
+     ,@body))
+
 (defun run-cl-mpi-testsuite ()
   (mpi-init)
   (assert (mpi-initialized))
@@ -8,37 +40,19 @@
     (assert (> size 0))
     (assert (> size rank -1))
     ;; discard the output of all but one MPI process
-    (let ((*test-dribble*
-            (if (zerop rank)
-                *test-dribble*
-                (make-broadcast-stream))))
-      (let ((machine
-              (format nil "~A ~A"
-                      (machine-type)
-                      (machine-version)))
-            (lisp
-              (format nil "~A ~A"
-                      (lisp-implementation-type)
-                      (lisp-implementation-version)))
-            (cl-mpi
-              (asdf:component-version
-               (asdf:find-system :cl-mpi)))
-            (mpi
-              (format nil "~A ~A"
-                      +mpi-implementation+
-                      +mpi-implementation-version+)))
-        (format *test-dribble*
-                "
-Machine: ~A
-Lisp:    ~A
-MPI:     ~A
-cl-mpi:  cl-mpi ~A~%"
-                machine lisp mpi cl-mpi))
+    (with-single-output
+        (print-test-suite-banner *test-dribble*)
       (run! 'mpi-serial-tests)
       (if (> size 1) ; check whether we run in parallel
           (run! 'mpi-parallel-tests)
           (format *test-dribble* "
 Note: You tested cl-mpi with only one process. Some test cases require a
-      parallel run and have been skipped. Rerun the program with `$ mpiexec
-      -np 2 YOUR_PROGRAM' to perform all tests.
+    parallel run and have been skipped. Rerun the program with `$ mpiexec
+    -np 2 YOUR_PROGRAM' to perform all tests.
 ")))))
+
+(defun run-cl-mpi-stress-tests ()
+  (mpi-init)
+  (with-single-output
+    (print-test-suite-banner *test-dribble*)
+    (run! 'mpi-stress-tests)))
