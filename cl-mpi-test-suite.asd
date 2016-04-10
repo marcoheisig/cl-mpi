@@ -14,4 +14,5 @@
     ((:file "packages")
      (:file "serial-tests")
      (:file "parallel-tests")
+     (:file "stress-tests")
      (:file "test-suite")))))

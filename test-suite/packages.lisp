@@ -1,7 +1,9 @@
 (defpackage #:cl-mpi-test-suite
   (:nicknames #:mpi-test-suite)
   (:use #:cl #:cl-mpi #:5am #:uiop #:cffi #:static-vectors)
-  (:export #:run-cl-mpi-test-suite))
+  (:export
+   #:run-cl-mpi-test-suite
+   #:run-cl-mpi-stress-tests))
 
 (in-package :cl-mpi-test-suite)
 
