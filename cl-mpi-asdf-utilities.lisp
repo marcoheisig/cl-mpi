@@ -67,6 +67,8 @@
   (cffi:load-foreign-library (output-file 'compile-op c)))
 
 (defmethod operation-done-p ((o compile-op) (c mpi-stub))
+  "Return NIL if the current MPI implementation differs from the one that
+was used to build this component."
   (if (equalp (mpi-info c)
               (compute-mpi-info))
       (call-next-method)

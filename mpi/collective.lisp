@@ -68,13 +68,17 @@ THE SOFTWARE.
 (defmpifun "MPI_Scatterv" (*sendbuf sendcounts displs sendtype *recvbuf recvcount recvtype root comm) :introduced "1.0")
 
 (defun mpi-barrier (&optional (comm *standard-communicator*))
-  "MPI-BARRIER blocks the caller until all group members have called it. The
-  call returns at any process only after all group members have entered the
-  call."
+  "MPI-BARRIER blocks the caller until all members of COMM have called
+  it. The call returns at any process only after all members of COMM have
+  entered the call."
   (%mpi-barrier comm))
 
 (defun mpi-broadcast (array root &key (comm *standard-communicator*)
                                    start end)
+  "Transfer the contents of ARRAY of the process with rank ROOT to all
+members of COMM. The call returns at any process only after all members of
+COMM have entered the call. The arguments START and END can be used to
+manipulate only a sub-sequence of ARRAY."
   (declare (type simple-array array)
            (type (signed-byte 32) root)
            (type mpi-comm comm)
