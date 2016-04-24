@@ -1,5 +1,7 @@
-(defsystem #:cl-mpi-extensions
-  :depends-on (#:cl-mpi #:cffi #:cl-conspack)
+(in-package :asdf-user)
+
+(defsystem :cl-mpi-extensions
+  :depends-on (:cl-mpi :cffi :cl-conspack)
   :license "MIT"
   :components
   ((:module "extensions"

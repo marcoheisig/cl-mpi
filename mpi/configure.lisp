@@ -1,7 +1,7 @@
 ;;; -*- Mode: Lisp; indent-tabs-mode: nil -*-
 ;;; Copyright (C) 2014  Marco Heisig <marco.heisig@fau.de>
 
-(in-package #:cl-mpi)
+(in-package :cl-mpi)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 

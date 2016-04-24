@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:mpi)
+(in-package :mpi)
 
 #|
 (defmpifun "MPI_Accumulate" (*origin_addr origin_count origin_datatype target_rank target_disp target_count target_datatype op win) :introduced "2.0")

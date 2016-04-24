@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:mpi)
+(in-package :mpi)
 
 ;;; A CFFI:DEFCFUN invocation looks something like
 ;;; (CFFI:DEFCFUN NAMESPEC RETURN-VALUE (ARG1 TYPE1) (ARG2 TYPE2) ...)

@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:cl-mpi)
+(in-package :cl-mpi)
 
 (defmpifun "MPI_Bsend" (*buf count datatype dest tag comm) :introduced "1.0")
 (defmpifun "MPI_Bsend_init" (*buf count datatype dest tag comm *request) :introduced "1.0")

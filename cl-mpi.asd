@@ -1,4 +1,5 @@
-#+asdf3 (in-package #:asdf-user)
+(in-package :asdf-user)
+
 
 ;; this snippet prevents several dozen UIOP redefinition warnings.
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -6,7 +7,7 @@
     (declare #+sbcl(sb-ext:muffle-conditions sb-kernel:redefinition-warning))
   (handler-bind
       (#+sbcl(sb-kernel:redefinition-warning #'muffle-warning))
-    (asdf:load-system 'cffi-grovel))))
+    (asdf:load-system :cl-mpi-asdf-utilities))))
 
 (defsystem #:cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
@@ -21,8 +22,7 @@ communication overhead with a latency in the range of microseconds. In
 comparison to the C or FORTRAN interface of MPI, cl-mpi relieves the
 programmer from working with raw pointers to memory and a plethora of
 mandatory function arguments."
-  :defsystem-depends-on (#:cl-mpi-asdf-utilities)
-  :depends-on (#:alexandria #:cffi #:static-vectors)
+  :depends-on (:alexandria :cffi :static-vectors)
   :in-order-to ((test-op (test-op "cl-mpi-test-suite")))
   :components
   ((:module "mpi"

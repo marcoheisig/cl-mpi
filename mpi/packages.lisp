@@ -1,9 +1,9 @@
-(defpackage #:mpi
-  (:nicknames #:cl-mpi)
+(defpackage :mpi
+  (:nicknames :cl-mpi)
   (:documentation
    "CL-MPI: Common Lisp bindings for the Message Passing Interface MPI")
-  (:use #:cl #:cffi #:static-vectors #:alexandria)
-  (:import-from #:uiop #:version<=)
+  (:use :cl :cffi :static-vectors :alexandria)
+  (:import-from :uiop #:version<=)
   (:export
    ;; configure.lisp
    #:+mpi-version
@@ -142,5 +142,5 @@
    #:mpi-receive-anything
    #:mpi-broadcast-anything))
 
-(defpackage #:cl-mpi-header
+(defpackage :cl-mpi-header
   (:documentation "All constants extracted from mpi.h"))

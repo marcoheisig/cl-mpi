@@ -1,6 +1,6 @@
-(defpackage #:cl-mpi-extensions
-  (:nicknames #:mpi-extensions)
-  (:use #:cl #:cl-mpi #:static-vectors #:conspack)
+(defpackage :cl-mpi-extensions
+  (:nicknames :mpi-extensions)
+  (:use :cl :cl-mpi :static-vectors :conspack)
   (:export
    #:mpi-send-anything
    #:mpi-receive-anything

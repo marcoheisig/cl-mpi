@@ -24,7 +24,7 @@ THE SOFTWARE.
 |#
 
 
-(in-package #:cl-mpi)
+(in-package :cl-mpi)
 
 ;;; (Almost) all MPI functions return a status code as an integer. In cl-mpi,
 ;;; the user never sees the status code at all. It is automatically checked

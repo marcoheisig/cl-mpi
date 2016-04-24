@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package #:cl-mpi-extensions)
+(in-package :cl-mpi-extensions)
 
 (defun mpi-send-anything (object dest &key (comm *standard-communicator*)
                                         (tag 0))

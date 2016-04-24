@@ -1,8 +1,10 @@
-(defsystem #:cl-mpi-benchmarks
+(in-package :asdf-user)
+
+(defsystem :cl-mpi-benchmarks
   :author "Marco Heisig <marco.heisig@fau.de>"
   :version "0.9"
   :license "MIT"
-  :depends-on (#:cl-mpi #:cffi)
+  :depends-on (:cl-mpi :cffi)
   :perform (test-op (o s)
                     (uiop:symbol-call
                      :cl-mpi-benchmarks  '#:run-benchmarks))

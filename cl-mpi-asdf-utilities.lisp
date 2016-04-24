@@ -1,9 +1,9 @@
 ;;; Extend ASDF and the CFFI groveller to be MPI aware
-(defpackage #:cl-mpi-asdf-utilities
-  (:use #:asdf #:cl #:uiop)
+(defpackage :cl-mpi-asdf-utilities
+  (:use :asdf :cl :uiop)
   (:export #:mpi-stub #:grovel-mpi-file))
 
-(in-package #:cl-mpi-asdf-utilities)
+(in-package :cl-mpi-asdf-utilities)
 
 (defclass grovel-mpi-file (cffi-grovel:grovel-file) ())
 
