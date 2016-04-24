@@ -2,9 +2,6 @@
 
 (defun main (args)
   (unwind-protect
-       (uiop:symbol-call
-        "CL-MPI-TEST-SUITE"
-        "RUN-CL-MPI-TEST-SUITE")
-    (ignore-errors
-     (uiop:symbol-call "CL-MPI" "MPI-FINALIZE")
-     (uiop:quit 0))))
+       (cl-mpi-test-suite:run-cl-mpi-test-suite)
+    (mpi:mpi-finalize)
+    (uiop:quit 0)))

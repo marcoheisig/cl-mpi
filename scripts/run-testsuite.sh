@@ -2,6 +2,8 @@
 
 BASEDIR=$(dirname $0)
 
+LISP_IMPLEMENTATIONS="sbcl ccl ecl"
+
 usage()
 {
     echo "Usage: $0 [all|clean|ecl|ccl|...]"
@@ -71,11 +73,9 @@ then
     exit
 fi
 
-if [ $1 = "all" ]
+if ! [ $1 = "all" ]
 then
-    LISP_IMPLEMENTATIONS="sbcl ccl ecl"
-else
-    LISP_IMPLEMENTATIONS=$1
+    LISP_IMPLEMENTATIONS=$@
 fi
 
 for LISP in $LISP_IMPLEMENTATIONS; do
