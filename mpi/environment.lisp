@@ -77,12 +77,7 @@ be 0.001")
   #-sbcl(reload-mpi-libraries)
   (unless (mpi-initialized)
     ;; Initialize cl-mpi constants like +MPI-COMM-WORLD+.
-    (mapc
-     (lambda (obj)
-       (setf (mpi-object-handle obj)
-             (foreign-mpi-value (name obj)
-                                (class-name (class-of obj)))))
-     *mpi-constants*)
+   (initialize-mpi-constants)
     (%mpi-init (null-pointer) (null-pointer))
     ;; by default MPI reacts to each failure by crashing the process. This is
     ;; not the Lisp way of doing things. The following call makes errors

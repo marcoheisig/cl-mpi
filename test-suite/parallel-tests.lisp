@@ -129,9 +129,9 @@ MPI-WAITALL"
                                      :initial-element 3)
         (let ((requests (list (mpi-isend sendbuf partner)
                               (mpi-irecv recvbuf partner))))
-          (is (not (some #'mpi-null-p requests)))
+          (is (not (some #'mpi-null requests)))
           (mapc #'mpi-wait requests)
-          (is (every #'mpi-null-p requests))
+          (is (every #'mpi-null requests))
           (is (equalp recvbuf #(3 3 3))))))))
 
 (test (mpi-allreduce :depends-on nonblocking)

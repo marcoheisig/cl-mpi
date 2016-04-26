@@ -33,19 +33,14 @@ mandatory function arguments."
      ("cl-mpi-asdf-utilities:mpi-stub" "cl-mpi-stub")
 
      ;; extract all constants from "mpi.h"
-     ("cl-mpi-asdf-utilities:grovel-mpi-file" "grovel" :depends-on ("packages" "cl-mpi-stub"))
+     ("cl-mpi-asdf-utilities:grovel-mpi-file"
+      "grovel" :depends-on ("packages"))
 
      ;; MPI implementation dependent constants
-     (:file "configure" :depends-on ("grovel"))
-
-     ;; CLOS wrappers for MPI handles
-     (:file "wrapper-types" :depends-on ("configure"))
-
-     ;; Lisp-accessible variables from mpi.h
-     (:file "constants" :depends-on ("wrapper-types"))
+     (:file "setup" :depends-on ("grovel" "cl-mpi-stub"))
 
      ;; helper functions
-     (:file "utilities" :depends-on ("constants"))
+     (:file "utilities" :depends-on ("setup"))
 
      ;; the rest
      (:file "datatypes" :depends-on ("utilities"))

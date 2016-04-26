@@ -35,6 +35,7 @@ THE SOFTWARE.
 ;;; *MPI-NAMING-CONVENTIONS* and automatically returns MPI-ERROR-CODE. For
 ;;; example the type of an argument variable COUNT is always :INTEGER.
 
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *mpi-naming-conventions*
     (let ((table (make-hash-table)))

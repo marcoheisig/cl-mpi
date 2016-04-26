@@ -78,11 +78,9 @@ then
     LISP_IMPLEMENTATIONS=$@
 fi
 
+clean
 for LISP in $LISP_IMPLEMENTATIONS; do
     if build_image $LISP; then
         test_image $LISP
     fi
 done
-
-clean
-

@@ -6,7 +6,8 @@
   (:import-from :uiop #:version<=)
   (:export
    ;; configure.lisp
-   #:+mpi-version
+   #:+mpi-version+
+   #:+mpi-library+
    #:+mpi-implementation+
    #:+mpi-implementation-version+
    #:+mpi-max-error-string+
@@ -82,7 +83,7 @@
    #:+mpi-replace+
    #:+mpi-request-null+
    #:*standard-communicator*
-   #:mpi-null-p
+   #:mpi-null
 
    ;; utilities.lisp
    #:with-static-vectors
@@ -141,6 +142,3 @@
    #:mpi-send-anything
    #:mpi-receive-anything
    #:mpi-broadcast-anything))
-
-(defpackage :cl-mpi-header
-  (:documentation "All constants extracted from mpi.h"))

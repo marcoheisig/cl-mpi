@@ -13,9 +13,7 @@
           (asdf:component-version
            (asdf:find-system :cl-mpi)))
         (mpi
-          (format nil "~A ~A"
-                  +mpi-implementation+
-                  +mpi-implementation-version+)))
+          (format nil "~A" +mpi-library+)))
     (format destination
             "== Testing CL-MPI ==
 Machine: ~A
