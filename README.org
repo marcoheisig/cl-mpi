@@ -8,54 +8,42 @@ comparison to the C or FORTRAN interface of MPI, cl-mpi relieves the
 programmer from working with raw pointers to memory and a plethora of
 mandatory function arguments.
 
-If you have questions or suggestions, feel free to contact me.
+If you have questions or suggestions, feel free to contact me
+(marco.heisig@fau.de).
 
-cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
+cl-mpi has been tested with MPICH, MPICH2, IntelMPI and Open MPI.
 
 ** Usage
-   An MPI program must be launched with =mpirun= or =mpiexec=. These commands
-   spawn multiple processes depending on your system and commandline
-   parameters. Each process is identical, except that it has a unique rank that
-   can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
-   =(- (MPI-COMM-SIZE) 1)=.
+An MPI program must be launched with =mpirun= or =mpiexec=. These commands
+spawn multiple processes depending on your system and commandline
+parameters. Each process is identical, except that it has a unique rank that
+can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
+=(- (MPI-COMM-SIZE) 1)=.
 
-   A wide range of communication functions is avilable to transmit messages
-   between different ranks.
-
-   In case you change the MPI implementation of your system, cl-mpi needs to be
-   rebuilt. To do this, simply run
-   #+BEGIN_SRC lisp
-     (asdf:load-system :cl-mpi :force t)
-   #+END_SRC
-
-   Sometimes (e.g. on SBCL) it is necessary to perform a serial
-   =(asdf:load-system :cl-mpi)= on a node before the MPI parallel ones, because
-   asdf fails if operations are executed concurrently from different lisp
-   images on the same machine. The easiest aproach however is to build
-   standalone executables and start those with =mpiexec=. See the =scripts/=
-   directory for an example.
+A wide range of communication functions is avilable to transmit messages
+between different ranks.
 
 ** Testing
-   To run the testsuite:
-   #+BEGIN_SRC sh :results output
-   ./scripts/cl-mpi-test.sh all
-   #+END_SRC
+To run the test suite:
+#+BEGIN_SRC sh :results output
+   ./scripts/run-test-suite.sh all
+#+END_SRC
 
-   or
+or
 
-   #+BEGIN_SRC sh
-   ./scripts/cl-mpi-test.sh <YOUR-FAVOURITE-LISP>
-   #+END_SRC
+#+BEGIN_SRC sh :results output
+   ./scripts/run-test-suite.sh <YOUR-FAVOURITE-LISP>
+#+END_SRC
 
 ** Performance
-   cl-mpi makes no additional copies of transmitted data and has therefore the
-   same bandwidth as any other language (C, FORTRAN). However the convenience
-   of error handling, automatic inference of the message types and safe
-   computation of memory locations adds a little overhead to each message. The
-   exact overhead varies depending on the Lisp implementation and platform but
-   is somewhere around 1000 machine cycles.
+cl-mpi makes no additional copies of transmitted data and has therefore the
+same bandwidth as any other language (C, FORTRAN). However the convenience
+of error handling, automatic inference of the message types and safe
+computation of memory locations adds a little overhead to each message. The
+exact overhead varies depending on the Lisp implementation and platform but
+is somewhere around 1000 machine cycles.
 
-   Summary:
+Summary:
    - latency increase per message: 400 nanoseconds (SBCL on a 2.4GHz Intel i7-5500U)
    - bandwidth unchanged
 
@@ -64,9 +52,9 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and OpenMPI.
    - Marco Heisig
 
 ** Special Thanks
-   This project was funded by KONWIHR (The Bavarian Competence Network for
-   Technical and Scientific High Performance Computing) and the Chair for
-   Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
+This project was funded by KONWIHR (The Bavarian Competence Network for
+Technical and Scientific High Performance Computing) and the Chair for
+Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
 
-   Big thanks to Nicolas Neuss for all the useful suggestions.
+Big thanks to Nicolas Neuss for all the useful suggestions.
 

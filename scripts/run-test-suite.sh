@@ -26,7 +26,7 @@ build_image()
     if cl-launch --lisp $LISP \
                  -Q -s cl-mpi-test-suite \
                  -o $IMAGE -d $IMAGE -L \
-                 $BASEDIR/run-testsuite.lisp -E main; then
+                 $BASEDIR/run-test-suite.lisp -E main; then
         echo "...$LISP image complete"
         echo "========================================="
         echo
@@ -79,6 +79,7 @@ then
 fi
 
 clean
+
 for LISP in $LISP_IMPLEMENTATIONS; do
     if build_image $LISP; then
         test_image $LISP
