@@ -133,6 +133,7 @@
    #:mpi-recv
    #:mpi-irecv
    #:mpi-probe
+   #:mpi-iprobe
    #:mpi-wait
    #:mpi-waitall
 

@@ -166,18 +166,39 @@ mechanism such as sb-sys:with-pinned-objects."
 (defun mpi-probe (source &key
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
-  "Check whether a message with matching TAG has been sent on the
-communicator COMM. If so, return the size of the incoming message in
-bytes and the TAG of the sender."
+  "Block until a message with matching TAG and SOURCE has been sent on the
+communicator COMM. Return three values: The size of the incoming message in
+bytes, and the ID and TAG of the sender."
   (declare (type (signed-byte 32) source tag)
            (type mpi-comm comm))
   (with-foreign-object (status '(:struct mpi-status))
     (%mpi-probe source tag comm status)
-    (with-foreign-slots ((mpi-tag mpi-error) status (:struct mpi-status))
+    (with-foreign-slots ((mpi-tag mpi-source mpi-error) status (:struct mpi-status))
       (values
        (with-foreign-results ((count :int))
          (%mpi-get-count status +mpi-byte+ count))
+       mpi-source
        mpi-tag))))
+
+(defun mpi-iprobe (source &key
+                            (tag +mpi-any-tag+)
+                            (comm *standard-communicator*))
+  "MPI-IPROBEL checks whether a message with matching TAG and SOURCE has
+been sent on the communicator COMM. If so, it returns three values: The
+size of the incoming message in bytes, and the ID and TAG of the
+sender. Otherwise, it returns NIL."
+  (declare (type (signed-byte 32) source tag)
+           (type mpi-comm comm))
+  (with-foreign-objects ((status '(:struct mpi-status))
+                         (flag :int))
+    (%mpi-iprobe source tag comm flag status)
+    (unless (zerop (mem-ref flag :int))
+      (with-foreign-slots ((mpi-tag mpi-source mpi-error) status (:struct mpi-status))
+        (values
+         (with-foreign-results ((count :int))
+           (%mpi-get-count status +mpi-byte+ count))
+         mpi-source
+         mpi-tag)))))
 
 (defun mpi-wait (request)
   (declare (type mpi-request request))
@@ -201,5 +222,3 @@ bytes and the TAG of the sender."
             and i below n-requests do
               (setf (mpi-object-handle request)
                     (mem-aref requests* #.+mpi-object-handle-cffi-type+))))))
-
-;; TODO make GC free MPI_Request handles automatically

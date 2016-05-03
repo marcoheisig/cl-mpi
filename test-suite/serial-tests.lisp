@@ -103,14 +103,35 @@
                  (format nil "Error during ~s MPI-ISEND of ~d bytes."
                          mode (* 8 size))))))))
 
-(test (serial-mpi-probe :depends-on mpi-context)
+(test (mpi-probe :depends-on mpi-context)
   (with-fresh-mpi-context
     (let ((self (mpi-comm-rank)))
       (with-static-vectors ((src 3 :element-type 'double-float)
                             (dst 3 :element-type 'double-float))
         (let ((request (mpi-isend src self :tag 10)))
-          (is (= (* 3/8 (cl-mpi::bits-per-element src))
-                 (mpi-probe self :tag 10)))
+          (multiple-value-bind (size id tag)
+              (mpi-probe self :tag 10)
+            (is (= (* 3 8) size))
+            (is (= id self))
+            (is (= tag 10)))
           (mpi-waitall
            request
            (mpi-irecv dst self :tag 10)))))))
+
+(test (mpi-iprobe :depends-on mpi-context)
+  (with-fresh-mpi-context
+    (let ((self (mpi-comm-rank)))
+      (with-static-vectors ((src 3 :element-type 'double-float)
+                            (dst 3 :element-type 'double-float))
+        (let ((request (mpi-isend src self :tag 11)))
+          (loop ; luckily MPI makes a progress guarantee for this case
+            (multiple-value-bind (size id tag)
+                (mpi-iprobe self :tag 11)
+              (when size
+                (is (= (* 3 8) size))
+                (is (= id self))
+                (is (= tag 11))
+                (return))))
+          (mpi-waitall
+           request
+           (mpi-irecv dst self :tag 11)))))))

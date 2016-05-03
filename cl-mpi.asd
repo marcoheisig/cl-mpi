@@ -1,6 +1,5 @@
 (in-package :asdf-user)
 
-
 ;; this snippet prevents several dozen UIOP redefinition warnings.
 (eval-when (:compile-toplevel :load-toplevel :execute)
  (locally
