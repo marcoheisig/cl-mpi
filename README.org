@@ -23,6 +23,16 @@ can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
 A wide range of communication functions is avilable to transmit messages
 between different ranks.
 
+To get familiar with cl-mpi, see the [[file:examples/][examples directory]]. When [[http://cliki.net/CL-Launch][cl-launch]] is
+installed, each test can be invoked like this:
+#+BEGIN_SRC sh :results output
+mpiexec -n 3 ./examples/ring.lisp
+#+END_SRC
+
+Hint: It is usually faster and more resource friendly to first compile your
+Lisp application to a standalone executable and than launch it with
+=mpiexec=.
+
 ** Testing
 To run the test suite:
 #+BEGIN_SRC sh :results output
