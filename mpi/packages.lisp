@@ -94,7 +94,7 @@
 
    ;; collective.lisp
    #:mpi-barrier
-   #:mpi-broadcast
+   #:mpi-bcast
    #:mpi-allgather
    #:mpi-allreduce
    #:mpi-reduce

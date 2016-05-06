@@ -67,29 +67,11 @@ THE SOFTWARE.
 (defmpifun "MPI_Scatter" (*sendbuf sendcount sendtype *recvbuf recvcount recvtype root comm))
 (defmpifun "MPI_Scatterv" (*sendbuf sendcounts displs sendtype *recvbuf recvcount recvtype root comm))
 
-(defun mpi-barrier (&optional (comm *standard-communicator*))
-  "MPI-BARRIER blocks the caller until all members of COMM have called
-  it. The call returns at any process only after all members of COMM have
-  entered the call."
-  (%mpi-barrier comm))
-
-(defun mpi-broadcast (array root &key (comm *standard-communicator*)
-                                   start end)
-  "Transfer the contents of ARRAY of the process with rank ROOT to all
-members of COMM. The call returns at any process only after all members of
-COMM have entered the call. The arguments START and END can be used to
-manipulate only a sub-sequence of ARRAY."
-  (declare (type simple-array array)
-           (type int root)
-           (type mpi-comm comm)
-           (type index start end))
-  (multiple-value-bind (ptr type count)
-      (static-vector-mpi-data array start end)
-    (%mpi-bcast ptr count type root comm)))
-
 (defun mpi-allgather (send-array recv-array &key (comm *standard-communicator*)
                                               send-start send-end
                                               recv-start recv-end)
+  "After MPI-ALLGATHER returns, RECV-ARRAY will contain the contents of
+each processes SEND-ARRAY ordered by increasing mpi rank."
   (declare (type simple-array send-array recv-array)
            (type mpi-comm comm)
            (type index send-start send-end recv-start recv-end))
@@ -104,6 +86,8 @@ manipulate only a sub-sequence of ARRAY."
 (defun mpi-allreduce (send-array recv-array op &key (comm *standard-communicator*)
                                                  send-start send-end
                                                  recv-start recv-end)
+  "Combine the contents of each SEND-ARRAY element wise with the operation
+OP and store the result RECV-ARRAY."
   (declare (type simple-array send-array recv-array)
            (type mpi-op op)
            (type mpi-comm comm)
@@ -116,9 +100,31 @@ manipulate only a sub-sequence of ARRAY."
       (assert (eq recvtype sendtype))
       (%mpi-allreduce sendbuf recvbuf sendcount sendtype op comm))))
 
+(defun mpi-barrier (&optional (comm *standard-communicator*))
+  "MPI-BARRIER blocks the caller until all members of COMM have called
+  it. The call returns at any process only after all members of COMM have
+  entered the call."
+  (%mpi-barrier comm))
+
+(defun mpi-bcast (array root &key (comm *standard-communicator*)
+                                   start end)
+  "Transfer the contents of ARRAY of the process with rank ROOT to all
+members of COMM. The call returns at any process only after all members of
+COMM have entered the call. The arguments START and END can be used to
+manipulate only a sub-sequence of ARRAY."
+  (declare (type simple-array array)
+           (type int root)
+           (type mpi-comm comm)
+           (type index start end))
+  (multiple-value-bind (ptr type count)
+      (static-vector-mpi-data array start end)
+    (%mpi-bcast ptr count type root comm)))
+
 (defun mpi-reduce (send-array recv-array op root &key (comm *standard-communicator*)
                                                    send-start send-end
                                                    recv-start recv-end)
+  "Combine the contents of each SEND-ARRAY element wise with the operation
+OP and store the result into the RECV-ARRAY of the process with rank ROOT."
   (declare (type simple-array send-array)
            (type mpi-op op)
            (type int root)

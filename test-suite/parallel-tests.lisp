@@ -81,8 +81,8 @@
       (free-static-vector recvbuf)
       (free-static-vector sendbuf))))
 
-(test (mpi-broadcast :depends-on send-subsequence)
-  "Use mpi-broadcast to broadcast a single number."
+(test (mpi-bcast :depends-on send-subsequence)
+  "Use mpi-bcast to broadcast a single number."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
     (with-static-vector (buffer 1 :element-type 'double-float)
@@ -90,10 +90,10 @@
             (message (coerce pi 'double-float)))
         (if (= rank root)
             (setf (aref buffer 0) message))
-        (mpi-broadcast buffer root)
+        (mpi-bcast buffer root)
         (is (= (aref buffer 0) message))))))
 
-(test (mpi-allgather :depends-on mpi-broadcast)
+(test (mpi-allgather :depends-on mpi-bcast)
   "Use mpi-allgather to generate a vector of all ranks."
   (let ((rank (mpi-comm-rank))
         (size (mpi-comm-size)))
@@ -162,5 +162,5 @@ MPI-WAITALL"
               (when (every (lambda (x) (= x 1.0d0)) dest)
                 (setf (aref allgood 0) 1)))
             (mpi-reduce source nil +mpi-max+ root))
-        (mpi-broadcast allgood root)
+        (mpi-bcast allgood root)
         (is (plusp (aref allgood 0)))))))
