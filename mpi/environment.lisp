@@ -128,7 +128,7 @@ system)."
 
 (defun mpi-error-string (errorcode)
   "Convert the given errorcode to a human readable error message"
-  (declare (type (signed-byte 32) errorcode))
+  (declare (type int errorcode))
   (with-foreign-object (strlen :int)
     (with-foreign-pointer (error-string +mpi-max-error-string+)
       (%mpi-error-string errorcode error-string strlen)

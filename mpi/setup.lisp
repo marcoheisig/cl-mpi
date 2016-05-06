@@ -63,6 +63,10 @@ Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
       (error 'mpi-error-condition :error-code value)
     (ignore () nil)))
 
+;;; some deftypes for the most common types handled by MPI
+(deftype int () '(signed-byte 32))
+(deftype index () '(or null (integer 0 #.array-total-size-limit)))
+
 ;;; There is a plethora of types in MPI. We represent them as a subclass of
 ;;; MPI-OBJECT and provide appropriate CFFI wrapper types of the form
 ;;; <CLASSNAME>-type.

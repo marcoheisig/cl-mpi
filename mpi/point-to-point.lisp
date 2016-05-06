@@ -74,10 +74,9 @@ THE SOFTWARE.
                        send-start send-end
                        recv-start recv-end)
   (declare (type simple-array send-data recv-data)
-           (type (signed-byte 32)
-                 dest send-tag source recv-tag)
+           (type int dest send-tag source recv-tag)
            (type mpi-comm comm)
-           (type (or null (integer 0 #.array-total-size-limit))
+           (type index
                  send-start send-end recv-start recv-end))
   (multiple-value-bind (send-buf send-type send-count)
       (static-vector-mpi-data send-data send-start send-end)
@@ -97,10 +96,10 @@ MPI-SEND and MPI-RECV must be of type SIMPLE-ARRAY and have the same
 element-type and dimensions. Undefined behaviour occurs if the arrays at
 sender and receiver side do not match."
   (declare (type simple-array array)
-           (type (signed-byte 32) dest tag)
+           (type int dest tag)
            (type mpi-comm comm)
            (type (member :basic :buffered :synchronous :ready) mode)
-           (type (or null (integer 0 #.array-total-size-limit)) start end))
+           (type index start end))
   (let ((send-function
           (ecase mode
             (:basic #'%mpi-send)
@@ -124,10 +123,10 @@ relocated or garbage-collected until the send operation is complete. This can
 be achieved by using STATIC-VECTORS or some implementation dependent
 mechanism such as sb-sys:with-pinned-objects."
   (declare (type simple-array array)
-           (type (signed-byte 32) dest tag)
+           (type int dest tag)
            (type mpi-comm comm)
            (type (member :basic :buffered :synchronous :ready) mode)
-           (type (or null (integer 0 #.array-total-size-limit)) start end))
+           (type index start end))
   (let ((send-function
           (ecase mode
             (:basic #'%mpi-isend)
@@ -143,9 +142,9 @@ mechanism such as sb-sys:with-pinned-objects."
                                 start end
                                 (tag +mpi-any-tag+))
   (declare (type simple-array array)
-           (type (signed-byte 32) source tag)
+           (type int source tag)
            (type mpi-comm comm)
-           (type (or null (integer 0 #.array-total-size-limit)) start end))
+           (type index start end))
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array start end)
     ;; TODO check the mpi-status
@@ -155,9 +154,9 @@ mechanism such as sb-sys:with-pinned-objects."
                                  start end
                                  (tag +mpi-any-tag+))
   (declare (type simple-array array)
-           (type (signed-byte 32) source tag)
+           (type int source tag)
            (type mpi-comm comm)
-           (type (or null (integer 0 #.array-total-size-limit)) start end))
+           (type index start end))
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array start end)
     (with-foreign-results ((request 'mpi-request))
@@ -169,7 +168,7 @@ mechanism such as sb-sys:with-pinned-objects."
   "Block until a message with matching TAG and SOURCE has been sent on the
 communicator COMM. Return three values: The size of the incoming message in
 bytes, and the ID and TAG of the sender."
-  (declare (type (signed-byte 32) source tag)
+  (declare (type int source tag)
            (type mpi-comm comm))
   (with-foreign-object (status '(:struct mpi-status))
     (%mpi-probe source tag comm status)
@@ -187,7 +186,7 @@ bytes, and the ID and TAG of the sender."
 been sent on the communicator COMM. If so, it returns three values: The
 size of the incoming message in bytes, and the ID and TAG of the
 sender. Otherwise, it returns NIL."
-  (declare (type (signed-byte 32) source tag)
+  (declare (type int source tag)
            (type mpi-comm comm))
   (with-foreign-objects ((status '(:struct mpi-status))
                          (flag :int))

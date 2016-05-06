@@ -94,13 +94,13 @@ THE SOFTWARE.
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-comm-group comm newgroup)))
 
-(declaim (ftype (function * (signed-byte 32)) mpi-group-size))
+(declaim (ftype (function * int) mpi-group-size))
 (defun mpi-group-size (group)
   (declare (type mpi-group group))
   (with-foreign-results ((size :int))
     (%mpi-group-size group size)))
 
-(declaim (ftype (function * (signed-byte 32)) mpi-group-rank))
+(declaim (ftype (function * int) mpi-group-rank))
 (defun mpi-group-rank (group)
   (declare (type mpi-group group))
   (with-foreign-results ((rank :int))
@@ -181,14 +181,14 @@ THE SOFTWARE.
       (setf (mpi-object-handle group)
             (mem-ref handle #.+mpi-object-handle-cffi-type+)))))
 
-(declaim (ftype (function * (signed-byte 32)) mpi-comm-size))
+(declaim (ftype (function * int) mpi-comm-size))
 (defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For
 +mpi-comm-world+, it indicates the total number of processes available."
   (with-foreign-results ((size :int))
     (%mpi-comm-size comm size)))
 
-(declaim (ftype (function * (signed-byte 32)) mpi-comm-rank))
+(declaim (ftype (function * int) mpi-comm-rank))
 (defun mpi-comm-rank (&optional (comm *standard-communicator*))
   "Returns the rank of the process in a given communicator."
   (declare (type mpi-comm comm))
