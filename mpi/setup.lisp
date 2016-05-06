@@ -175,7 +175,6 @@ Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
   (setf +mpi-library+
         (mpi-symbol-value '+mpi-library+ :string)))
 
-
 (defmacro define-mpi-constant (class-sym name-sym)
   `(progn
      (defvar ,name-sym
@@ -239,20 +238,3 @@ Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
 
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)
-
-(defun mpi-equal (a b)
-  (let ((a (mpi-object-handle a))
-        (b (mpi-object-handle b)))
-    (if (and (integerp a) (integerp b))
-        (eql a b)
-        (pointer-eq a b))))
-
-(defun mpi-null (object)
-  (mpi-equal
-   object
-   (typecase object
-     (mpi-comm +mpi-comm-null+)
-     (mpi-group +mpi-group-null+)
-     (mpi-datatype +mpi-datatype-null+)
-     (mpi-request +mpi-request-null+)
-     (t nil))))

@@ -233,3 +233,22 @@ program."
     (unwind-protect
          `(progn ,@body)
       (mpi-comm-free *standard-communicator*))))
+
+(defun mpi-equal (a b)
+  (when (and (typep a 'mpi-object)
+             (typep b 'mpi-object))
+    (let ((a (mpi-object-handle a))
+          (b (mpi-object-handle b)))
+      (if (and (integerp a) (integerp b))
+          (eql a b)
+          (pointer-eq a b)))))
+
+(defun mpi-null (object)
+  (mpi-equal
+   object
+   (typecase object
+     (mpi-comm +mpi-comm-null+)
+     (mpi-group +mpi-group-null+)
+     (mpi-datatype +mpi-datatype-null+)
+     (mpi-request +mpi-request-null+)
+     (t nil))))

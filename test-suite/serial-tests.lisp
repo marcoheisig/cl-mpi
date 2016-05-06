@@ -114,9 +114,11 @@
             (is (= (* 3 8) size))
             (is (= id self))
             (is (= tag 10)))
-          (mpi-waitall
-           request
-           (mpi-irecv dst self :tag 10)))))))
+          (is (every
+               (lambda (x) (mpi-null x))
+               (mpi-waitall
+                request
+                (mpi-irecv dst self :tag 10)))))))))
 
 (test (mpi-iprobe :depends-on mpi-context)
   (with-fresh-mpi-context
@@ -132,6 +134,8 @@
                 (is (= id self))
                 (is (= tag 11))
                 (return))))
-          (mpi-waitall
-           request
-           (mpi-irecv dst self :tag 11)))))))
+          (is (every
+               (lambda (x) (mpi-null x))
+               (mpi-waitall
+                request
+                (mpi-irecv dst self :tag 11)))))))))

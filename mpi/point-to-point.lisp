@@ -221,4 +221,5 @@ sender. Otherwise, it returns NIL."
       (loop for request in requests
             and i below n-requests do
               (setf (mpi-object-handle request)
-                    (mem-aref requests* #.+mpi-object-handle-cffi-type+))))))
+                    (mem-aref requests* #.+mpi-object-handle-cffi-type+ i)))
+      requests)))
