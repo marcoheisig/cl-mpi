@@ -29,11 +29,12 @@ THE SOFTWARE.
 ;;; A CFFI:DEFCFUN invocation looks something like
 ;;; (CFFI:DEFCFUN NAMESPEC RETURN-VALUE (ARG1 TYPE1) (ARG2 TYPE2) ...)
 ;;;
-;;; A typical MPI routine takes sometimes more than eight arguments and always
-;;; returns an MPI-ERROR-CODE. To improve readablility, I provide a function
-;;; DEFMPIFUN, which looks up the type of a variable in the table
-;;; *MPI-NAMING-CONVENTIONS* and automatically returns MPI-ERROR-CODE. For
-;;; example the type of an argument variable COUNT is always :INTEGER.
+;;; A typical MPI routine takes sometimes more than eight arguments and
+;;; always returns an MPI-ERROR-CODE. To improve readablility, I provide a
+;;; function DEFMPIFUN, which expands into defcfun, but attempts to look up
+;;; the type of a variable in the table *MPI-NAMING-CONVENTIONS*.
+;;;
+;;; example: the type of an argument variable COUNT is always :INTEGER.
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -76,38 +77,40 @@ THE SOFTWARE.
             ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls))))
       table)))
 
-(defmacro defmpifun (foreign-name (&rest mpi-identifiers)
-                     &key documentation introduced deprecated removed)
+(defmacro defmpifun (foreign-name (&rest args)
+                     &key (introduced "1.0") removed deprecated)
   (check-type foreign-name string)
   (let ((lisp-name
           (intern
            (concatenate 'string "%" (substitute #\- #\_ (string-upcase foreign-name)))
            '#:cl-mpi))
-        (args
-          (loop for symbol in mpi-identifiers
-                collect `(,symbol ,(gethash symbol *mpi-naming-conventions*))))
+        (expanded-args
+          (loop for arg in args
+                collect
+                (if (symbolp arg)
+                    `(,arg ,(gethash arg *mpi-naming-conventions*))
+                    arg)))
         (introducedp (version<= introduced +mpi-version+))
-        (removedp (and removed (version<= removed +mpi-version+)))
-        (deprecatedp (version<= deprecated +mpi-version+)))
+        (removedp    (and removed    (version<= removed +mpi-version+)))
+        (deprecatedp (and deprecated (version<= deprecated +mpi-version+))))
     ;; Currently I do not handle deprecation - this is ok because as of June
     ;; 2015 the MPI Committee also has no way to handle deprecation.
     (declare (ignorable deprecatedp))
-    (if documentation (push documentation args))
     (cond
       ((not introducedp)
-       `(defun ,lisp-name ,mpi-identifiers
-          (declare (ignore ,@mpi-identifiers))
+       `(defun ,lisp-name (&rest args)
+          (declare (ignore args))
           (error
            "This function is only available from MPI versions above ~A.~%"
            ,introduced)))
       (removedp
-       `(defun ,lisp-name ,mpi-identifiers
-          (declare (ignore ,@mpi-identifiers))
+       `(defun ,lisp-name (&rest args)
+          (declare (ignore args))
           (error
            "This function was removed in MPI version ~A.~%"
            ,removed)))
       (t
-       `(defcfun (,foreign-name ,lisp-name) mpi-error-code ,@args)))))
+       `(defcfun (,foreign-name ,lisp-name) mpi-error-code ,@expanded-args)))))
 
 (defmacro %bits-per-element (array-element-type)
   "Compute the number of bits reserved per element of a simple-array."
