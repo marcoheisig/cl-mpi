@@ -1,5 +1,5 @@
 #!/bin/sh
-":" ; exec cl-launch -Q -s cl-mpi -E 'cl-mpi/examples/ring::main' -X -- "$0" "$@" || exit
+":" ; exec cl-launch -Q -s cl-mpi -E main -X -- "$0" "$@" || exit
 
 ;;; all participating processes pass a given message in a circle until it
 ;;; reaches again the original sender (here rank 0)
@@ -15,7 +15,7 @@
   (apply #'format t fmt args)
   (finish-output))
 
-(defun main (&optional arg)
+(defun cl-user::main (&optional arg)
   (declare (ignorable arg))
   (mpi-init)
   (let* ((message "foobar")

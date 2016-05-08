@@ -24,9 +24,9 @@ build_image()
     echo "Building $LISP ($LISP_VERSION) image ..."
 
     if cl-launch --lisp $LISP \
-                 -Q -s cl-mpi-test-suite \
-                 -o $IMAGE -d $IMAGE -L \
-                 $BASEDIR/run-test-suite.lisp -E main; then
+                 -Q -sp cl-mpi-test-suite \
+                 -i "(unwind-protect (run-cl-mpi-test-suite) (mpi-finalize) (uiop:quit))" \
+                 -o $IMAGE -d $IMAGE; then
         echo "...$LISP image complete"
         echo "========================================="
         echo
