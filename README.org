@@ -36,7 +36,7 @@ your Lisp application to a standalone executable and than launch it with
 cl-launch) that can be used like this:
 #+BEGIN_SRC sh results output
 ./scripts/build-cl-mpi-application.sh ./examples/ring.lisp ring
-mpirun -np 4 ring
+mpiexec -n 4 ring
 #+END_SRC
 
 ** Testing
@@ -48,7 +48,7 @@ To run the test suite:
 or
 
 #+BEGIN_SRC sh :results output
-   ./scripts/run-test-suite.sh <YOUR-FAVOURITE-LISP>
+   ./scripts/run-test-suite.sh YOUR-FAVOURITE-LISP
 #+END_SRC
 
 ** Performance
