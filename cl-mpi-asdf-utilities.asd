@@ -7,4 +7,6 @@
   :license "MIT"
   :depends-on (:cffi-grovel)
   :components
-  ((:file "cl-mpi-asdf-utilities")))
+  ((:module "mpi"
+    :components
+    ((:file "asdf-utilities")))))
