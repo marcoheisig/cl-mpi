@@ -38,6 +38,12 @@
     (is (= (floor size 2) (mpi-group-size odds)))
     (mpi-group-free all-procs first all-but-first odds evens)))
 
+(test (mpi-buffering :depends-on mpi-init)
+  (mpi::mpi-buffer-detach)
+  (is (length mpi::*current-buffer*) 0)
+  (mpi-demand-buffering 1000)
+  (is (length mpi::*current-buffer*) 1000))
+
 (test (mpi-context :depends-on mpi-init)
   (is (mpi-comm-free (mpi-comm-dup)))
   (let ((c1 *standard-communicator*)
@@ -81,6 +87,7 @@
 
 (test (serial-mpi-isend :depends-on mpi-context)
   (with-fresh-mpi-context
+    (mpi-demand-buffering 1000)
     (let ((self (mpi-comm-rank)))
       (loop
         for (mode size)

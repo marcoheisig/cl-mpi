@@ -147,6 +147,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; point-to-point.lisp
 
+   #:mpi-demand-buffering
    #:mpi-sendrecv
    #:mpi-send
    #:mpi-isend

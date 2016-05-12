@@ -67,6 +67,30 @@ THE SOFTWARE.
 (defmpifun "MPI_Waitany" (count requests *index *status))
 (defmpifun "MPI_Waitsome" (incount requests *outcount indices statuses))
 
+(defvar *current-buffer* nil)
+
+(defun mpi-demand-buffering (size)
+  "Ensure that the MPI buffer that is used for blocking commands has a size
+of at least SIZE bytes."
+  (declare (type int size))
+  (when (> size (length *current-buffer*))
+    (mpi-buffer-detach)
+    (let ((buffer (make-static-vector size)))
+      (%mpi-buffer-attach (static-vector-pointer buffer) size)
+      (setf *current-buffer* buffer)
+      (values))))
+
+(defun mpi-buffer-detach ()
+  "Release the resources that MPI uses for messages with :MODE :BUFFERING."
+  (when *current-buffer*
+    (let ((buffer *current-buffer*))
+      (with-foreign-objects ((pointer :pointer)
+                             (size :int))
+        (%mpi-buffer-detach pointer size))
+      (setf *current-buffer* nil)
+      (free-static-vector buffer)
+      (values))))
+
 (defun mpi-sendrecv (send-data dest recv-data source
                      &key (comm *standard-communicator*)
                        (send-tag 0)

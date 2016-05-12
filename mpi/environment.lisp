@@ -91,6 +91,7 @@ communications involving a process complete before the process calls
 MPI-FINALIZE."
   (when (mpi-initialized)
     (unless (mpi-finalized)
+      (mpi-buffer-detach)
       (%mpi-finalize))))
 
 (defun mpi-initialized ()
