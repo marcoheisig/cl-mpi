@@ -1,5 +1,5 @@
 #!/bin/sh
-":" ; exec cl-launch -Q -s cl-mpi -E main -X -- "$0" "$@" || exit
+":" ; exec cl-launch -Q -s cl-mpi -E main -X -- "$0" "$@" || exit || echo " -*- mode: Lisp -*- "
 
 ;;; all participating processes pass a given message in a circle until it
 ;;; reaches again the original sender (here rank 0)
