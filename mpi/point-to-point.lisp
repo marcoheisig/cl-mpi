@@ -60,7 +60,7 @@ THE SOFTWARE.
 (defmpifun "MPI_Test" (*request *flag *status))
 (defmpifun "MPI_Test_cancelled" (*status *flag))
 (defmpifun "MPI_Testall" (count requests *flag statuses))
-(defmpifun "MPI_Testany" (count requests *index *flag *status):introduced "1.0")
+(defmpifun "MPI_Testany" (count requests *index *flag *status))
 (defmpifun "MPI_Testsome" (incount requests *outcount indices statuses))
 (defmpifun "MPI_Wait" (*request *status))
 (defmpifun "MPI_Waitall" (count requests statuses))

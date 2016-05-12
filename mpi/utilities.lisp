@@ -77,8 +77,7 @@ THE SOFTWARE.
             ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls))))
       table)))
 
-(defmacro defmpifun (foreign-name (&rest args)
-                     &key (introduced "1.0") removed deprecated)
+(defmacro defmpifun (foreign-name (&rest args) &key (introduced "1.0"))
   (check-type foreign-name string)
   (let ((lisp-name
           (intern
@@ -89,28 +88,11 @@ THE SOFTWARE.
                 collect
                 (if (symbolp arg)
                     `(,arg ,(gethash arg *mpi-naming-conventions*))
-                    arg)))
-        (introducedp (version<= introduced +mpi-version+))
-        (removedp    (and removed    (version<= removed +mpi-version+)))
-        (deprecatedp (and deprecated (version<= deprecated +mpi-version+))))
+                    arg))))
     ;; Currently I do not handle deprecation - this is ok because as of June
     ;; 2015 the MPI Committee also has no way to handle deprecation.
-    (declare (ignorable deprecatedp))
-    (cond
-      ((not introducedp)
-       `(defun ,lisp-name (&rest args)
-          (declare (ignore args))
-          (error
-           "This function is only available from MPI versions above ~A.~%"
-           ,introduced)))
-      (removedp
-       `(defun ,lisp-name (&rest args)
-          (declare (ignore args))
-          (error
-           "This function was removed in MPI version ~A.~%"
-           ,removed)))
-      (t
-       `(defcfun (,foreign-name ,lisp-name) mpi-error-code ,@expanded-args)))))
+    `(since-mpi-version ,introduced
+       (defcfun (,foreign-name ,lisp-name) mpi-error-code ,@expanded-args))))
 
 (defmacro %bits-per-element (array-element-type)
   "Compute the number of bits reserved per element of a simple-array."
@@ -157,6 +139,10 @@ THE SOFTWARE.
     #-ccl
     ((simple-array character (*))          (%bits-per-element character))))
 
+(defmacro mpi-datatype-of-size (size)
+  (car (find size *mpi-datatype-table*
+             :key (lambda (x) (foreign-type-size (cdr x))))))
+
 (declaim (inline static-vector-mpi-data)
          (ftype (function * (values foreign-pointer mpi-datatype (signed-byte 32)))))
 (defun static-vector-mpi-data (vector start end)
@@ -166,15 +152,15 @@ corresponding MPI-DATATYPE and the number of elements to transmit.
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
 your code is broken. So better have a look at the STATIC-VECTORS package."
   (declare (type (simple-array * (*)) vector)
-           (type (or null (integer 0 #.array-total-size-limit)) start end)
+           (type (or null index) start end)
            (optimize (safety 0) (debug 0)))
   (let* ((n-bits (bits-per-element vector))
          (mpi-datatype
            (ecase n-bits
-             ((1 2 4 8) +mpi-uint8-t+)
-             (16 +mpi-uint16-t+)
-             (32 +mpi-uint32-t+)
-             (64 +mpi-uint64-t+)))
+             ((1 2 4 8) (mpi-datatype-of-size 1))
+             (16 (mpi-datatype-of-size 2))
+             (32 (mpi-datatype-of-size 4))
+             (64 (mpi-datatype-of-size 8))))
          ;; MPI can only send with byte granularity. It is an error to send
          ;; arrays with element size less than 8 where start and end are not
          ;; aligned on byte boundaries
@@ -250,8 +236,9 @@ program."
   (mpi-equal
    object
    (typecase object
-     (mpi-comm +mpi-comm-null+)
      (mpi-group +mpi-group-null+)
-     (mpi-datatype +mpi-datatype-null+)
+     (mpi-comm +mpi-comm-null+)
      (mpi-request +mpi-request-null+)
+     (mpi-op +mpi-op-null+)
+     (mpi-errhandler +mpi-errhandler-null+)
      (t nil))))

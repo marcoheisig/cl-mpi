@@ -25,20 +25,25 @@ THE SOFTWARE.
 
 (in-package :cl-mpi)
 
-(defvar +mpi-version+
-  (format nil "~d.~d" |MPI_VERSION| |MPI_SUBVERSION|))
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant +mpi-version+
+      (format nil "~d.~d" |MPI_VERSION| |MPI_SUBVERSION|)
+    :test #'string-equal)
+
   (cond
     ((boundp '|OPEN_MPI|)
      (defconstant +mpi-object-handle-cffi-type+ :pointer))
     (t
      (defconstant +mpi-object-handle-cffi-type+ :int))))
 
+(defmacro since-mpi-version (version &body body)
+  (when (version<= version +mpi-version+)
+    `(progn ,@body)))
+
 (defun lisp-constant-accessor-name (symbol)
   "Translate the symbol SYMBOL to a string denoting its C language accessor function.
 
-Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
+Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
   (let ((name (symbol-name symbol)))
     (concatenate
      'string "cl_mpi_get_"
@@ -192,10 +197,8 @@ Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
 (define-mpi-constant mpi-errhandler +mpi-errors-return+)
 (define-mpi-constant mpi-errhandler +mpi-errors-are-fatal+)
 (define-mpi-constant mpi-group +mpi-group-empty+)
-(define-mpi-constant mpi-group +mpi-group-null+)
 (define-mpi-constant mpi-comm +mpi-comm-world+)
 (define-mpi-constant mpi-comm +mpi-comm-self+)
-(define-mpi-constant mpi-comm +mpi-comm-null+)
 (define-mpi-constant mpi-datatype +mpi-datatype-null+)
 (define-mpi-constant mpi-datatype +mpi-lb+)
 (define-mpi-constant mpi-datatype +mpi-ub+)
@@ -216,14 +219,15 @@ Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
 (define-mpi-constant mpi-datatype +mpi-long-double+)
 (define-mpi-constant mpi-datatype +mpi-wchar+)
 (define-mpi-constant mpi-datatype +mpi-c-bool+)
-(define-mpi-constant mpi-datatype +mpi-int8-t+)
-(define-mpi-constant mpi-datatype +mpi-int16-t+)
-(define-mpi-constant mpi-datatype +mpi-int32-t+)
-(define-mpi-constant mpi-datatype +mpi-int64-t+)
-(define-mpi-constant mpi-datatype +mpi-uint8-t+)
-(define-mpi-constant mpi-datatype +mpi-uint16-t+)
-(define-mpi-constant mpi-datatype +mpi-uint32-t+)
-(define-mpi-constant mpi-datatype +mpi-uint64-t+)
+(since-mpi-version "2.2"
+  (define-mpi-constant mpi-datatype +mpi-int8-t+)
+  (define-mpi-constant mpi-datatype +mpi-int16-t+)
+  (define-mpi-constant mpi-datatype +mpi-int32-t+)
+  (define-mpi-constant mpi-datatype +mpi-int64-t+)
+  (define-mpi-constant mpi-datatype +mpi-uint8-t+)
+  (define-mpi-constant mpi-datatype +mpi-uint16-t+)
+  (define-mpi-constant mpi-datatype +mpi-uint32-t+)
+  (define-mpi-constant mpi-datatype +mpi-uint64-t+))
 (define-mpi-constant mpi-datatype +mpi-packed+)
 (define-mpi-constant mpi-op +mpi-min+)
 (define-mpi-constant mpi-op +mpi-max+)
@@ -238,7 +242,32 @@ Example: +mpi-comm-world+ -> cl_mpi_get_MPI-COMM-WORLD"
 (define-mpi-constant mpi-op +mpi-maxloc+)
 (define-mpi-constant mpi-op +mpi-minloc+)
 (define-mpi-constant mpi-op +mpi-replace+)
+
+;;; null handles
+(define-mpi-constant mpi-group +mpi-group-null+)
+(define-mpi-constant mpi-comm +mpi-comm-null+)
+(define-mpi-constant mpi-op +mpi-op-null+)
 (define-mpi-constant mpi-request +mpi-request-null+)
+(define-mpi-constant mpi-errhandler +mpi-errhandler-null+)
 
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)
+
+(defvar *mpi-datatype-table*
+  '((+mpi-char+ . :char)
+    (+mpi-signed-char+ . :char)
+    (+mpi-unsigned-char+ . :unsigned-char)
+    (+mpi-byte+ . :char)
+    (+mpi-short+ . :short)
+    (+mpi-unsigned-short+ . :unsigned-short)
+    (+mpi-int+ . :int)
+    (+mpi-unsigned+ . :unsigned-int)
+    (+mpi-long+ . :long)
+    (+mpi-unsigned-long+ . :unsigned-long)
+    (+mpi-long-long-int+ . :long-long)
+    (+mpi-unsigned-long-long+ . :unsigned-long-long)
+    (+mpi-float+ . :float)
+    (+mpi-double+ . :double)
+    (+mpi-long-double+ . :long-double))
+  "An alist of MPI datatypes and corresponding CFFI types.")
+
