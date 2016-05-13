@@ -1,6 +1,6 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI Environmental Management
+MPI environmental management
 
 Copyright (c) 2008,2009  Alex Fukunaga
 Copyright (C) 2014,2015  Marco Heisig <marco.heisig@fau.de>

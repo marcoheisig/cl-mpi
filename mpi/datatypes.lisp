@@ -1,6 +1,6 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI datatypes for Common Lisp
+MPI datatype handling
 
 Copyright (C) 2015  Marco Heisig <marco.heisig@fau.de>
 
@@ -24,8 +24,6 @@ THE SOFTWARE.
 |#
 
 (in-package :cl-mpi)
-
-;;; A.2.2 Datatypes C Bindings
 
 ;; (defmpifun "MPI_Get_address")
 ;; (defmpifun "MPI_Get_elements")

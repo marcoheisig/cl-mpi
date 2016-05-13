@@ -25,8 +25,6 @@ THE SOFTWARE.
 
 (in-package :cl-mpi)
 
-;;; A.2.4 Groups, Contexts, Communicators, and Caching C Bindings
-
 ;; (defmpifun "MPI_COMM_DUP_FN")
 ;; (defmpifun "MPI_COMM_NULL_COPY_FN")
 ;; (defmpifun "MPI_COMM_NULL_DELETE_FN")

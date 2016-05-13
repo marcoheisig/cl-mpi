@@ -190,14 +190,6 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
       ,@(loop for binding in bindings
               collect `(mem-ref ,@binding)))))
 
-(defmacro with-static-vectors (specs &body body)
-  "Wrap BODY into multiple invocations of WITH-STATIC-VECTOR."
-  (if (null specs)
-      `(progn ,@body)
-      `(with-static-vector ,(car specs)
-         (with-static-vectors ,(cdr specs)
-           ,@body))))
-
 (defun reload-mpi-libraries ()
   "Load all MPI related libraries again. This might be necessary after a
 session is resumed from a Lisp image"
@@ -213,15 +205,6 @@ session is resumed from a Lisp image"
    (asdf:output-file
     'asdf:compile-op
     (asdf:find-component "cl-mpi" '("mpi" . "cl-mpi-stub")))))
-
-(defmacro with-fresh-mpi-context (&body body)
-  "Execute body with *STANDARD-COMMUNICATOR* bound to a new unique
-communicator. This prevents errors within BODY to affect other parts of the
-program."
-  (let ((*standard-communicator* (mpi-comm-dup)))
-    (unwind-protect
-         `(progn ,@body)
-      (mpi-comm-free *standard-communicator*))))
 
 (defun mpi-equal (a b)
   (when (and (typep a 'mpi-object)
@@ -242,3 +225,17 @@ program."
      (mpi-op +mpi-op-null+)
      (mpi-errhandler +mpi-errhandler-null+)
      (t nil))))
+
+(unless (fboundp 'with-static-vectors)
+  (let ((*package* (find-package :static-vectors)))
+    (defmacro with-static-vectors ((&optional ((var length &rest args)
+                                               '(nil nil) supplied-p)
+                                    &rest more-clauses)
+                                   &body body)
+      "Wrap BODY into multiple invocations of WITH-STATIC-VECTOR."
+      (if supplied-p
+          `(with-static-vector (,var ,length ,@args)
+             (with-static-vectors ,more-clauses
+               ,@body))
+          `(progn ,@body)))
+    (export 'with-static-vectors)))

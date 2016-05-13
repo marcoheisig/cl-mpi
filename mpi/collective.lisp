@@ -1,6 +1,6 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI Collective Communication Functions
+MPI collective communication functions
 
 Copyright (c) 2008,2009  Alex Fukunaga
 Copyright (C) 2014,2015  Marco Heisig <marco.heisig@fau.de>
@@ -25,8 +25,6 @@ THE SOFTWARE.
 |#
 
 (in-package :cl-mpi)
-
-;;; A.2.3 Collective Communication C Bindings
 
 (defmpifun "MPI_Allgather" (*sendbuf sendcount sendtype *recvbuf recvcount recvtype comm))
 (defmpifun "MPI_Allgatherv" (*sendbuf sendcount sendtype *recvbuf recvcounts displs recvtype comm))

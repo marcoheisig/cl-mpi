@@ -96,8 +96,6 @@
 
    #:mpi-equal
    #:mpi-null
-   #:with-static-vectors
-   #:with-fresh-mpi-context
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; datatypes.lisp

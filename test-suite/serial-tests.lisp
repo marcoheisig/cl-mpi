@@ -2,7 +2,14 @@
 
 (in-suite mpi-serial-tests)
 
-;;; environment related functions
+(defmacro with-fresh-mpi-context (&body body)
+  "Execute body with *STANDARD-COMMUNICATOR* bound to a new unique
+communicator. This prevents errors within BODY to affect other parts of the
+program."
+  (let ((*standard-communicator* (mpi-comm-dup)))
+    (unwind-protect
+         `(progn ,@body)
+      (mpi-comm-free *standard-communicator*))))
 
 (test (mpi-wtime)
   (is (<= 0 (mpi-wtime)))
