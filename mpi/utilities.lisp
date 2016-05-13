@@ -177,7 +177,7 @@ your code is broken. So better have a look at the STATIC-VECTORS package."
       (assert (zerop (rem start bit-alignment)))
       (assert (zerop (rem end bit-alignment)))
       (let* ((offset (ceiling (* start n-bits) 8))
-             (count (- end start))
+             (count (/ (- end start) bit-alignment))
              (ptr (static-vector-pointer vector :offset offset)))
         (values ptr mpi-datatype count)))))
 
