@@ -42,7 +42,18 @@
                        (mpi-recv buffer target :end message-size))
                       ((oddp target)
                        (mpi-recv buffer target :end message-size)
-                       (mpi-send buffer target :end message-size))))
+                       (mpi-send buffer target :end message-size)))
+                ;; in case you want to compare the performance of cl-mpi
+                ;; with low level CFFI calls, here is what the latter would
+                ;; look like. (Spoiler: 100 nanoseconds, so dont bother)
+                ;;
+                ;; (cond ((evenp target)
+                ;;        (mpi::%mpi-send ptr count +mpi-byte+ target 0 comm)
+                ;;        (mpi::%mpi-recv ptr count +mpi-byte+ target 0 comm +mpi-status-ignore+))
+                ;;       ((oddp target)
+                ;;        (mpi::%mpi-recv ptr count +mpi-byte+ target 0 comm +mpi-status-ignore+)
+                ;;        (mpi::%mpi-send ptr count +mpi-byte+ target 0 comm)))
+                    )
               (let ((usec (* 1000000.0d0 (- (mpi-wtime) tbegin))))
                 (when (= (mpi-comm-rank) 0)
                   (printf "~9D bytes ~12,4F usec/msg ~8,2F MB/sec~%"
