@@ -82,7 +82,7 @@
                   ;; print the data received from SOURCE
                 (loop for i below N do
                   (if (zerop (aref data i))
-                      (write-char #\SPACE)
+                      (write-char #\.)
                       (write-char #\X))))))
           (write-char #\NEWLINE)
           (finish-output))
@@ -101,7 +101,7 @@
       (multiple-value-bind (bonus big-chunks)
           (floor remainder active-ranks)
         (values
-         ;; the size of the rank local domain
+         ;; the size of the local domain of RANK
          (cond
            ((< rank big-chunks) (+ chunk-size bonus 1))
            ((< rank active-ranks) (+ chunk-size bonus))
@@ -155,6 +155,5 @@
                (uiop:quit)))
         (iterations 80))
     (cellular N iterations)
-    ;(printf "done~%")
     (mpi-finalize)
     (uiop:quit)))
