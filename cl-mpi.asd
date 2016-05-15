@@ -11,7 +11,7 @@
 (defsystem #:cl-mpi
   :description "Common Lisp bindings for the Message Passing Interface (MPI)"
   :author "Marco Heisig <marco.heisig@fau.de>"
-  :version "0.9"
+  :version "0.99"
   :license "MIT"
   :long-description
   "cl-mpi provides convenient CFFI bindings for the Message Passing

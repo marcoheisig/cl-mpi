@@ -3,7 +3,6 @@
 (defsystem :cl-mpi-test-suite
   :description "The cl-mpi test suite"
   :author "Marco Heisig <marco.heisig@fau.de>"
-  :version "0.9"
   :license "MIT"
   :depends-on (:cl-mpi :fiveam :cffi)
   :perform (test-op (o s)

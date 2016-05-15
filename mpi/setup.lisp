@@ -253,21 +253,3 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)
 
-(defvar *mpi-datatype-table*
-  '((+mpi-char+ . :char)
-    (+mpi-signed-char+ . :char)
-    (+mpi-unsigned-char+ . :unsigned-char)
-    (+mpi-byte+ . :char)
-    (+mpi-short+ . :short)
-    (+mpi-unsigned-short+ . :unsigned-short)
-    (+mpi-int+ . :int)
-    (+mpi-unsigned+ . :unsigned-int)
-    (+mpi-long+ . :long)
-    (+mpi-unsigned-long+ . :unsigned-long)
-    (+mpi-long-long-int+ . :long-long)
-    (+mpi-unsigned-long-long+ . :unsigned-long-long)
-    (+mpi-float+ . :float)
-    (+mpi-double+ . :double)
-    (+mpi-long-double+ . :long-double))
-  "An alist of MPI datatypes and corresponding CFFI types.")
-

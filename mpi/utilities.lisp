@@ -26,6 +26,10 @@ THE SOFTWARE.
 
 (in-package :mpi)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; DEFMPIFUN
+;;;
 ;;; A CFFI:DEFCFUN invocation looks something like
 ;;; (CFFI:DEFCFUN NAMESPEC RETURN-VALUE (ARG1 TYPE1) (ARG2 TYPE2) ...)
 ;;;
@@ -36,46 +40,44 @@ THE SOFTWARE.
 ;;;
 ;;; example: the type of an argument variable COUNT is always :INTEGER.
 
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *mpi-naming-conventions*
-    (let ((table (make-hash-table)))
-      (flet ((introduce-conventions (type &rest symbols)
-               (loop for symbol in symbols do
-                 (setf (gethash symbol table) type))))
-        (mapc
-         (lambda (x) (apply #'introduce-conventions x))
-         '((:pointer
-            *buf *sendbuf *recvbuf *inbuf *outbuf *inoutbuf fun argc argv ptr)
-           ((:pointer :int)
-            *result *count *position *size *rank *index *outcount *commute *keyval)
-           (:string string)
-           ((:pointer :boolean) *flag)
-           (:int
-            count incount outcount insize outsize sendcount recvcount source dest
-            tag sendtag recvtag size root commute errorcode)
-           (:boolean flag)
-           (mpi-errhandler errhandler)
-           (mpi-comm comm oldcomm comm1 comm2)
-           (mpi-group group group1 group2)
-           (mpi-datatype datatype sendtype recvtype oldtype)
-           (mpi-op op)
-           (mpi-request request)
-           ((:pointer (:struct mpi-status)) *status)
-           ((:pointer mpi-op) *op)
-           ((:pointer mpi-message) *message)
-           ((:pointer mpi-request) *request)
-           ((:pointer mpi-comm) *newcomm *comm)
-           ((:pointer mpi-group) *newgroup *group)
-           ((:pointer mpi-datatype) *newtype)
-           ((:pointer (:struct mpi-status)) statuses)
-           ((:pointer mpi-datatype) sendtypes recvtypes)
-           ((:pointer mpi-request) requests)
-           ((:array :int *) indices)
-           ((:pointer (:array :int *)) ranges)
-           ((:array :int *)
-            ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls))))
-      table)))
+(defvar *mpi-naming-conventions*
+  (let ((table (make-hash-table)))
+    (flet ((introduce-conventions (type &rest symbols)
+             (loop for symbol in symbols do
+               (setf (gethash symbol table) type))))
+      (mapc
+       (lambda (x) (apply #'introduce-conventions x))
+       '((:pointer
+          *buf *sendbuf *recvbuf *inbuf *outbuf *inoutbuf fun argc argv ptr)
+         ((:pointer :int)
+          *result *count *position *size *rank *index *outcount *commute *keyval)
+         (:string string)
+         ((:pointer :boolean) *flag)
+         (:int
+          count incount outcount insize outsize sendcount recvcount source dest
+          tag sendtag recvtag size root commute errorcode)
+         (:boolean flag)
+         (mpi-errhandler errhandler)
+         (mpi-comm comm oldcomm comm1 comm2)
+         (mpi-group group group1 group2)
+         (mpi-datatype datatype sendtype recvtype oldtype)
+         (mpi-op op)
+         (mpi-request request)
+         ((:pointer (:struct mpi-status)) *status)
+         ((:pointer mpi-op) *op)
+         ((:pointer mpi-message) *message)
+         ((:pointer mpi-request) *request)
+         ((:pointer mpi-comm) *newcomm *comm)
+         ((:pointer mpi-group) *newgroup *group)
+         ((:pointer mpi-datatype) *newtype)
+         ((:pointer (:struct mpi-status)) statuses)
+         ((:pointer mpi-datatype) sendtypes recvtypes)
+         ((:pointer mpi-request) requests)
+         ((:array :int *) indices)
+         ((:pointer (:array :int *)) ranges)
+         ((:array :int *)
+          ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls))))
+    table))
 
 (defmacro defmpifun (foreign-name (&rest args) &key (introduced "1.0"))
   (check-type foreign-name string)
@@ -94,92 +96,141 @@ THE SOFTWARE.
     `(since-mpi-version ,introduced
        (defcfun (,foreign-name ,lisp-name) mpi-error-code ,@expanded-args))))
 
-(defmacro %bits-per-element (array-element-type)
-  "Compute the number of bits reserved per element of a simple-array."
-  (let ((initial-element
-          (cond
-            ((subtypep array-element-type 'character) #\B)
-            ((subtypep array-element-type 'float) (coerce 0 array-element-type))
-            (t 0))))
-    (with-static-vector (test-array 2 :element-type array-element-type
-                                      :initial-element initial-element)
-      (let ((ptr (static-vector-pointer test-array)))
-        ;; flip more and more bits until the second value of the static array
-        ;; changes. The upper bound of 128 should never be reached and is only a
-        ;; safeguard against overwriting the whole heap in case of something odd.
-        (loop for bit from 0 to 128 do
-          (setf (mem-ref ptr :uint8 (floor bit 8))
-                (expt 2 (mod bit 8)))
-              when (not (eql (aref test-array 1)
-                             initial-element))
-                do (return bit)
-              finally
-                 (error "Unknown array memory layout. Possible memory corruption!"))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; converting Lisp vectors to raw pointers
+;;;
+;;; The next section is not for the weak of heart and demonstrates how one
+;;; can obtain the address and length of subsequences of Lisp vectors.
 
-(declaim (inline bits-per-element))
-(defun bits-per-element (array)
-  (etypecase array
-    ((simple-array single-float (*))       (%bits-per-element single-float))
-    ((simple-array double-float (*))       (%bits-per-element double-float))
-    #-ccl
-    ((simple-array (unsigned-byte 1) (*))  (%bits-per-element (unsigned-byte 1)))
-    #-ccl
-    ((simple-array (unsigned-byte 2) (*))  (%bits-per-element (unsigned-byte 2)))
-    #-ccl
-    ((simple-array (unsigned-byte 4) (*))  (%bits-per-element (unsigned-byte 4)))
-    ((simple-array (signed-byte 8) (*))    (%bits-per-element (signed-byte 8)))
-    ((simple-array (unsigned-byte 8) (*))  (%bits-per-element (unsigned-byte 8)))
-    ((simple-array (signed-byte 16) (*))   (%bits-per-element (signed-byte 16)))
-    ((simple-array (unsigned-byte 16) (*)) (%bits-per-element (unsigned-byte 16)))
-    ((simple-array (signed-byte 32) (*))   (%bits-per-element (signed-byte 32)))
-    ((simple-array (unsigned-byte 32) (*)) (%bits-per-element (unsigned-byte 32)))
-    ((simple-array (signed-byte 64) (*))   (%bits-per-element (signed-byte 64)))
-    ((simple-array (unsigned-byte 64) (*)) (%bits-per-element (unsigned-byte 64)))
-    ((simple-array base-char (*))          (%bits-per-element base-char))
-    #-ccl
-    ((simple-array character (*))          (%bits-per-element character))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *mpi-datatype-table*
+    '((+mpi-char+ . :char)
+      (+mpi-signed-char+ . :char)
+      (+mpi-unsigned-char+ . :unsigned-char)
+      (+mpi-byte+ . :char)
+      (+mpi-short+ . :short)
+      (+mpi-unsigned-short+ . :unsigned-short)
+      (+mpi-int+ . :int)
+      (+mpi-unsigned+ . :unsigned-int)
+      (+mpi-long+ . :long)
+      (+mpi-unsigned-long+ . :unsigned-long)
+      (+mpi-long-long-int+ . :long-long)
+      (+mpi-unsigned-long-long+ . :unsigned-long-long)
+      (+mpi-float+ . :float)
+      (+mpi-double+ . :double)
+      (+mpi-long-double+ . :long-double))
+    "An alist of MPI datatypes and corresponding CFFI types."))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun bits-per-element (array-element-type)
+    "Bits reserved per array element of type ARRAY-ELEMENT-TYPE."
+    (when (eq (upgraded-array-element-type array-element-type) t)
+      (error "Cannot determine bits per element for elements of type T."))
+    (let ((initial-element
+            (cond
+              ((subtypep array-element-type 'character) #\B)
+              ((subtypep array-element-type 'float) (coerce 0 array-element-type))
+              (t 0))))
+      (with-static-vector (test-array 8 :element-type array-element-type
+                                         :initial-element initial-element)
+        (let ((ptr (static-vector-pointer test-array)))
+          ;; flip more and more bytes until the outer values of the static
+          ;; array changes. The upper bound of 128 should never be reached
+          ;; and is only a safeguard against overwriting the whole heap in
+          ;; case of something odd.
+          (loop for i below 128 and flipped-bytes from 1 do
+            (setf (mem-ref ptr :int8 i) (lognot (mem-ref ptr :int8 i)))
+                when (not (eql (aref test-array 7) initial-element))
+                  do (return (if (< flipped-bytes 8) flipped-bytes
+                                 (* 8 (floor flipped-bytes 7))))))))))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *bits-per-element-table*
+    (let* ((upgraded-array-element-types
+             (remove-duplicates
+              (mapcar #'upgraded-array-element-type
+                      `(single-float
+                        double-float
+                        base-char
+                        character
+                        ,@(loop for n from 1 to 64
+                                append `((signed-byte ,n)
+                                         (unsigned-byte ,n)))))
+              :test #'equal))
+           (alist (loop for uaet in (remove 't upgraded-array-element-types)
+                        collect
+                        (let ((bits (bits-per-element uaet)))
+                          `(,uaet . ,bits)))))
+      ;; now remove all unnecessary clauses, that is where the element type
+      ;; is a true subtype of another one, while having the same number of
+      ;; bits per element.
+      (loop for (uaet . bits) in (copy-seq alist) do
+        (setf alist
+              (delete-if
+               (lambda (x)
+                 (let ((x-uaet (car x))
+                       (x-bits (cdr x)))
+                   (and (subtypep x-uaet uaet)
+                        (not (equal x-uaet uaet))
+                        (= x-bits bits))))
+               alist)))
+      alist)))
 
 (defmacro mpi-datatype-of-size (size)
-  (car (find size *mpi-datatype-table*
-             :key (lambda (x) (foreign-type-size (cdr x))))))
+  `',(car (find size *mpi-datatype-table*
+                :key (lambda (x) (foreign-type-size (cdr x))))))
 
-(declaim (inline static-vector-mpi-data)
-         (ftype (function * (values foreign-pointer mpi-datatype (signed-byte 32)))))
-(defun static-vector-mpi-data (vector start end)
-  "Return a pointer to the raw memory of the given array, as well as the
+;;; This macro is essentially a specialized compiler for vector memory
+;;; access and is only useful in the body of STATIC-VECTOR-MPI-DATA
+(defmacro static-vector-mpi-data-dispatch (vector start end)
+  (let ((blocks
+          (loop for bits in (remove-duplicates (mapcar #'cdr *bits-per-element-table*))
+                collect
+                (let ((mpi-datatype (ecase bits
+                                      ((1 2 4 8) (mpi-datatype-of-size 1))
+                                      (16 (mpi-datatype-of-size 2))
+                                      (32 (mpi-datatype-of-size 4))
+                                      (64 (mpi-datatype-of-size 8))))
+                      (bytes-per-element (/ bits 8))
+                      (elements-per-mpi-datatype (ceiling 8 bits)))
+                  `(,bits
+                    (setf offset (* ,start ,bytes-per-element))
+                    (setf mpi-datatype ,mpi-datatype)
+                    (setf count (ceiling (- ,end ,start) ,elements-per-mpi-datatype))
+                    (go end)))))
+        (clauses
+          (loop for (uaet . bits) in *bits-per-element-table* collect
+                `((simple-array ,uaet (*)) (go ,bits)))))
+    `(let ((offset 0) mpi-datatype (count 0))
+       (declare (type fixnum offset)
+                (type (or mpi-datatype null) mpi-datatype)
+                (type int count))
+       (tagbody
+          (etypecase ,vector ,@clauses)
+          ,@(apply #'append blocks)
+        end)
+       (values (static-vector-pointer ,vector :offset offset) mpi-datatype count))))
+
+(defun static-vector-mpi-data (vector &optional start end)
+  "Return a pointer to the raw memory of the given vector, as well as the
 corresponding MPI-DATATYPE and the number of elements to transmit.
 
 WARNING: If ARRAY is somehow moved in memory (e.g. by the garbage collector),
-your code is broken. So better have a look at the STATIC-VECTORS package."
+your code is broken, so better have a look at the STATIC-VECTORS package."
   (declare (type (simple-array * (*)) vector)
-           (type (or null index) start end)
+           (type index start end)
            (optimize (safety 0) (debug 0)))
-  (let* ((n-bits (bits-per-element vector))
-         (mpi-datatype
-           (ecase n-bits
-             ((1 2 4 8) (mpi-datatype-of-size 1))
-             (16 (mpi-datatype-of-size 2))
-             (32 (mpi-datatype-of-size 4))
-             (64 (mpi-datatype-of-size 8))))
-         ;; MPI can only send with byte granularity. It is an error to send
-         ;; arrays with element size less than 8 where start and end are not
-         ;; aligned on byte boundaries
-         (bit-alignment
-           (case n-bits
-             (1 8)
-             (2 4)
-             (4 2)
-             (otherwise 1))))
-    (let* ((len (length vector))
-           (start (if start start 0))
-           (end (if end end len)))
-      (assert (<= 0 start end len))
-      (assert (zerop (rem start bit-alignment)))
-      (assert (zerop (rem end bit-alignment)))
-      (let* ((offset (ceiling (* start n-bits) 8))
-             (count (/ (- end start) bit-alignment))
-             (ptr (static-vector-pointer vector :offset offset)))
-        (values ptr mpi-datatype count)))))
+  (let* ((dim (length vector))
+         (start (or start 0))
+         (end (or end dim)))
+    (assert (<= 0 start end dim))
+    ;; The macroexpansion of the following line is quite beautiful
+    (static-vector-mpi-data-dispatch vector start end)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Finally some miscellaneous utilites for cl-mpi
 
 (defmacro with-foreign-results (bindings &body body)
   "Evaluate body as with WITH-FOREIGN-OBJECTS, but afterwards convert them to
