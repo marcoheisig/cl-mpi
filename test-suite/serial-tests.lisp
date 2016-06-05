@@ -69,7 +69,7 @@ program."
 (test (serial-mpi-sendrecv :depends-on mpi-context)
   (with-fresh-mpi-context
     (let ((self (mpi-comm-rank)))
-      ;; send a array containing 10 zeros
+      ;; send an array containing 10 zeros
       (with-static-vectors ((src 10 :element-type 'double-float
                                     :initial-element 0.0d0)
                             (dst 10 :element-type 'double-float
