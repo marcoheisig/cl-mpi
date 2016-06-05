@@ -252,4 +252,3 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
 
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)
-

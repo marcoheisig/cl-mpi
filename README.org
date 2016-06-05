@@ -73,4 +73,3 @@ Technical and Scientific High Performance Computing) and the Chair for
 Applied Mathematics 3 of Prof. Dr. Bänsch at the FAU Erlangen-Nürnberg.
 
 Big thanks to Nicolas Neuss for all the useful suggestions.
-
