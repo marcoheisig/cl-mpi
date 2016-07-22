@@ -206,10 +206,10 @@ bytes, and the ID and TAG of the sender."
 (defun mpi-iprobe (source &key
                             (tag +mpi-any-tag+)
                             (comm *standard-communicator*))
-  "MPI-IPROBEL checks whether a message with matching TAG and SOURCE has
+  "MPI-IPROBE checks whether a message with matching TAG and SOURCE has
 been sent on the communicator COMM. If so, it returns three values: The
 size of the incoming message in bytes, and the ID and TAG of the
-sender. Otherwise, it returns NIL."
+sender. Otherwise, it returns false."
   (declare (type int source tag)
            (type mpi-comm comm))
   (with-foreign-objects ((status '(:struct mpi-status))

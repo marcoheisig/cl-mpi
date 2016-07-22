@@ -86,35 +86,29 @@ THE SOFTWARE.
 ;; (defmpifun "MPI_Win_set_attr")
 ;; (defmpifun "MPI_Win_set_name")
 
-(declaim (ftype (function * mpi-group) mpi-comm-group))
 (defun mpi-comm-group (&optional (comm *standard-communicator*))
   (declare (type mpi-comm comm))
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-comm-group comm newgroup)))
 
-(declaim (ftype (function * int) mpi-group-size))
 (defun mpi-group-size (group)
   (declare (type mpi-group group))
   (with-foreign-results ((size :int))
     (%mpi-group-size group size)))
 
-(declaim (ftype (function * int) mpi-group-rank))
 (defun mpi-group-rank (group)
   (declare (type mpi-group group))
   (with-foreign-results ((rank :int))
     (%mpi-group-rank group rank)))
 
-(declaim (ftype (function * mpi-group) mpi-group-union))
 (defun mpi-group-union (group1 group2)
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-union group1 group2 newgroup)))
 
-(declaim (ftype (function * mpi-group) mpi-group-intersection))
 (defun mpi-group-intersection (group1 group2)
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-intersection group1 group2 newgroup)))
 
-(declaim (ftype (function * mpi-group) mpi-group-difference))
 (defun mpi-group-difference (group1 group2)
   (with-foreign-results ((newgroup 'mpi-group))
     (%mpi-group-difference group1 group2 newgroup)))
@@ -151,7 +145,6 @@ THE SOFTWARE.
             (progn ,@body)
          (foreign-free ,spec-name)))))
 
-(declaim (ftype (function * mpi-group) mpi-group-incl))
 (defun mpi-group-incl (group &rest rank-spec)
   "Create a new MPI group consisting of a subset of the ranks of the original
  group. A valid range can be
@@ -161,7 +154,6 @@ THE SOFTWARE.
     (with-mpi-rank-spec (spec count) (rank-spec)
       (%mpi-group-range-incl group count spec newgroup))))
 
-(declaim (ftype (function * mpi-group) mpi-group-excl))
 (defun mpi-group-excl (group &rest rank-spec)
   "Create a new MPI group consisting of a subset of the ranks of the original
  group. A valid range can be
@@ -179,26 +171,23 @@ THE SOFTWARE.
       (setf (mpi-object-handle group)
             (mem-ref handle #.+mpi-object-handle-cffi-type+)))))
 
-(declaim (ftype (function * int) mpi-comm-size))
 (defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For
 +mpi-comm-world+, it indicates the total number of processes available."
   (with-foreign-results ((size :int))
     (%mpi-comm-size comm size)))
 
-(declaim (ftype (function * int) mpi-comm-rank))
 (defun mpi-comm-rank (&optional (comm *standard-communicator*))
   "Returns the rank of the process in a given communicator."
-  (declare (type mpi-comm comm))
   (with-foreign-results ((rank :int))
     (%mpi-comm-rank comm rank)))
 
-(declaim (ftype (function * mpi-comm) mpi-comm-create))
 (defun mpi-comm-create (group &key (comm *standard-communicator*))
+  (declare (type mpi-group group)
+           (type mpi-comm comm))
   (with-foreign-results ((newcomm 'mpi-comm))
     (%mpi-comm-create comm group newcomm)))
 
-(declaim (ftype (function * mpi-comm) mpi-comm-dup))
 (defun mpi-comm-dup (&optional (comm *standard-communicator*))
   (with-foreign-results ((newcomm 'mpi-comm))
     (%mpi-comm-dup comm newcomm)))
