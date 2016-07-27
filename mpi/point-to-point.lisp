@@ -223,6 +223,17 @@ sender. Otherwise, it returns false."
          mpi-source
          mpi-tag)))))
 
+(defun mpi-test (request)
+  (declare (type mpi-request request))
+  (with-foreign-objects ((status* '(:struct mpi-status))
+                         (flag* :int)
+                         (request* 'mpi-request))
+    (setf (mem-ref request* 'mpi-request) request)
+    (%mpi-test request* flag* status*)
+    (setf (mpi-object-handle request)
+          (mem-ref request* #.+mpi-object-handle-cffi-type+))
+    (values (not (zerop (mem-ref flag* :int))) request)))
+
 (defun mpi-wait (request)
   (declare (type mpi-request request))
   (with-foreign-objects ((status* '(:struct mpi-status))

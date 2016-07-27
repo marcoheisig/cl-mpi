@@ -154,6 +154,7 @@
    #:mpi-irecv
    #:mpi-probe
    #:mpi-iprobe
+   #:mpi-test
    #:mpi-wait
    #:mpi-waitall
 

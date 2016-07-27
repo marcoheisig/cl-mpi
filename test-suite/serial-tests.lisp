@@ -153,3 +153,20 @@ program."
                (mpi-waitall
                 request
                 (mpi-irecv dst self :tag 11)))))))))
+
+(test (mpi-wait-and-test :depends-on mpi-context)
+  (with-fresh-mpi-context
+    (let ((self (mpi-comm-rank)))
+      (with-static-vectors ((src 3 :element-type 'double-float)
+                            (dst 3 :element-type 'double-float))
+        (let ((recv-request (mpi-irecv src self :tag 12)))
+          (multiple-value-bind (done request)
+              (mpi-test recv-request)
+            (is (not done))
+            (is (typep recv-request 'mpi-request))
+            (is (not (mpi-null request))))
+          (let ((send-request (mpi-isend dst self :tag 12)))
+            (loop until (and (mpi-test send-request)
+                             (mpi-test recv-request)))
+            (is (mpi-null (mpi-wait send-request)))
+            (is (mpi-null (mpi-wait recv-request)))))))))
