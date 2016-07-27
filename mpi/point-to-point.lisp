@@ -139,8 +139,8 @@ sender and receiver side do not match."
                                end
                                (tag 0)
                                (mode :basic))
-  "A non-blocking variant of MPI-SEND. It returns immediately. To check
-  whether the send operation is complete, use MPI-WAIT or MPI-TEST.
+  "A non-blocking variant of MPI-SEND. Returns a MPI-REQUEST that can be
+passed to MPI-TEST, MPI-WAIT and MPI-WAITALL.
 
 WARNING: The caller of MPI-ISEND is responsible that the given array is not
 relocated or garbage-collected until the send operation is complete. This can
@@ -165,6 +165,8 @@ mechanism such as sb-sys:with-pinned-objects."
 (defun mpi-recv (array source &key (comm *standard-communicator*)
                                 start end
                                 (tag +mpi-any-tag+))
+  "Blocks until a message from a process with rank SOURCE and tag TAG has
+been received."
   (declare (type simple-array array)
            (type int source tag)
            (type mpi-comm comm)
@@ -191,7 +193,7 @@ mechanism such as sb-sys:with-pinned-objects."
                            (comm *standard-communicator*))
   "Block until a message with matching TAG and SOURCE has been sent on the
 communicator COMM. Return three values: The size of the incoming message in
-bytes, and the ID and TAG of the sender."
+bytes, and the rank and tag of the sender."
   (declare (type int source tag)
            (type mpi-comm comm))
   (with-foreign-object (status '(:struct mpi-status))
@@ -206,10 +208,13 @@ bytes, and the ID and TAG of the sender."
 (defun mpi-iprobe (source &key
                             (tag +mpi-any-tag+)
                             (comm *standard-communicator*))
-  "MPI-IPROBE checks whether a message with matching TAG and SOURCE has
-been sent on the communicator COMM. If so, it returns three values: The
-size of the incoming message in bytes, and the ID and TAG of the
-sender. Otherwise, it returns false."
+  "Checks whether a message with matching TAG and SOURCE has been sent on
+the communicator COMM. If so, it returns three values: The size of the
+incoming message in bytes, and the rank and tag of the sender. Otherwise,
+it returns false.
+
+MPI makes a progress guarantee, such that repeated calls to MPI-IPROBE to
+a message that has been sent will eventually succeed."
   (declare (type int source tag)
            (type mpi-comm comm))
   (with-foreign-objects ((status '(:struct mpi-status))
@@ -224,6 +229,10 @@ sender. Otherwise, it returns false."
          mpi-tag)))))
 
 (defun mpi-test (request)
+  "Returns whether REQUEST has been completed.
+
+MPI makes a progress guarantee, such that repeated calls to MPI-TEST to a
+request whose matching operation has been issued will eventually succeed."
   (declare (type mpi-request request))
   (with-foreign-objects ((status* '(:struct mpi-status))
                          (flag* :int)
@@ -235,6 +244,7 @@ sender. Otherwise, it returns false."
     (values (not (zerop (mem-ref flag* :int))) request)))
 
 (defun mpi-wait (request)
+  "Blocks until REQUEST has been completed."
   (declare (type mpi-request request))
   (with-foreign-objects ((status* '(:struct mpi-status))
                          (request* 'mpi-request))
@@ -245,6 +255,8 @@ sender. Otherwise, it returns false."
     request))
 
 (defun mpi-waitall (&rest requests)
+  "MPI-WAITALL blocks until all given requests have been completed. It
+returns REQUESTS."
   (let ((n-requests (length requests)))
     (with-foreign-objects ((requests* 'mpi-request n-requests)
                            (statuses* '(:struct mpi-status) n-requests))
