@@ -93,48 +93,16 @@ THE SOFTWARE.
 ;;; nonblocking communication
 
 (defclass mpi-request-anything (mpi-request)
-  ((%hook :initarg :hook :reader hook)
-   (%source :initarg :source :reader source)
-   (%tag :initarg :tag :reader tag)
-   (%ready :initarg :ready :accessor ready :initform t)))
+  ((%hook :initarg :hook :reader hook)))
 
-(defmethod hook ((object mpi-request))
-  (declare (ignore object))
-  nil)
+(defun run-hook (request)
+  (funcall (hook request)))
 
-(defmethod source ((object mpi-request))
-  (declare (ignore object))
-  +mpi-any-source+)
-
-(defmethod tag ((object mpi-request))
-  (declare (ignore object))
-  +mpi-any-tag+)
-
-(defun mpi-waitall-anything (&rest multi-requests)
+(defun mpi-waitall-anything (&rest metadata-requests)
   "Return a list of message descriptions. Each message description is of
-  the form (SOURCE TAG . OBJECTS)."
-  (let ((active-requests (flatten multi-requests))
-        new-requests
-        results)
-    (loop while active-requests do
-      (setf active-requests
-            (delete-if
-             (lambda (request)
-               (and (mpi-test request)
-                    (let ((result (funcall (hook request))))
-                      (cond
-                        ((typep result 'mpi-request)
-                         (push result new-requests))
-                        (result
-                         (push (list (source request)
-                                     (tag request)
-                                     result)
-                               results))
-                        (t t)))))
-             active-requests))
-      (setf active-requests (nconc new-requests active-requests))
-      (setf new-requests nil))
-    results))
+  the form (SOURCE TAG OBJECTS)."
+  (let ((data-requests (mapcar #'run-hook (apply #'mpi-waitall metadata-requests))))
+    (delete-if #'not (mapcar #'run-hook (apply #'mpi-waitall data-requests)))))
 
 (defun mpi-isend-anything (object dest &key (comm *standard-communicator*)
                                          (tag 0)
@@ -149,19 +117,18 @@ THE SOFTWARE.
          (metadata-buffer
            (make-static-vector 1 :element-type '(unsigned-byte 64)
                                  :initial-element (length data-buffer))))
-    (list
-     (change-class (mpi-isend metadata-buffer dest :tag tag :comm comm)
-                   'mpi-request-anything
-                   :tag tag
-                   :hook (lambda ()
-                           (free-static-vector metadata-buffer)
-                           nil))
-     (change-class (mpi-isend data-buffer dest :tag tag :comm comm)
-                   'mpi-request-anything
-                   :tag tag
-                   :hook (lambda ()
-                           (funcall cleanup data-buffer)
-                           nil)))))
+    (change-class
+     (mpi-isend metadata-buffer dest :tag tag :comm comm :mode :synchronous)
+     'mpi-request-anything
+     :hook
+     (lambda ()
+       (free-static-vector metadata-buffer)
+       (change-class
+        (mpi-isend data-buffer dest :tag tag :comm comm :mode :synchronous)
+        'mpi-request-anything
+        :hook (lambda ()
+                (funcall cleanup data-buffer)
+                nil))))))
 
 (defun mpi-irecv-anything (source &key (comm *standard-communicator*)
                                     (tag +mpi-any-tag+)
@@ -169,24 +136,21 @@ THE SOFTWARE.
   (declare (type (signed-byte 32) source tag)
            (type mpi-comm comm))
   (let ((metadata-buffer
-           (make-static-vector 1 :element-type '(unsigned-byte 64)))
-         data-buffer)
-    (list
-     (change-class
-      (mpi-irecv metadata-buffer source :comm comm :tag tag)
-      'mpi-request-anything
-      :tag tag
-      :source source
-      :hook (lambda ()
-              (setf data-buffer
-                    (make-static-vector (aref metadata-buffer 0)))
-              (free-static-vector metadata-buffer)
-              (change-class (mpi-irecv data-buffer source :comm comm :tag tag)
-                            'mpi-request-anything
-                            :tag tag
-                            :source source
-                            :ready nil
-                            :hook (lambda ()
-                                    (prog1
-                                        (funcall decode data-buffer)
-                                      (free-static-vector data-buffer)))))))))
+          (make-static-vector 1 :element-type '(unsigned-byte 64)))
+        data-buffer)
+    (change-class
+     (mpi-irecv metadata-buffer source :comm comm :tag tag)
+     'mpi-request-anything
+     :hook
+     (lambda ()
+       (setf data-buffer
+             (make-static-vector (aref metadata-buffer 0)))
+       (free-static-vector metadata-buffer)
+       (change-class
+        (mpi-irecv data-buffer source :comm comm :tag tag)
+        'mpi-request-anything
+        :hook
+        (lambda ()
+          (prog1
+              (list source tag (funcall decode data-buffer))
+            (free-static-vector data-buffer))))))))

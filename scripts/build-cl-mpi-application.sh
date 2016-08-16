@@ -24,5 +24,5 @@ IN=$1
 OUT=$2
 
 cl-launch \
-    -Q -s cl-mpi -s cl-mpi-test-suite -o $OUT -d $OUT \
+    -Q -s cl-mpi-extensions -s cl-mpi-test-suite -o $OUT -d $OUT \
     -L $IN -E main

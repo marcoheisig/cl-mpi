@@ -32,9 +32,9 @@
       (mpi-irecv-anything left-neighbor :tag 2)
       (mpi-isend-anything
        `(,(format nil "Greetings left neighbor! Have a ~a." object) ,object)
-       left-neighbor :tag 2)
+       left-neighbor :tag 1)
       (mpi-isend-anything
        `(,(format nil "Greetings right neighbor! Have a ~a." object) ,object)
-       right-neighbor :tag 1))))
+       right-neighbor :tag 2))))
   (mpi-finalize)
   (uiop:quit))
