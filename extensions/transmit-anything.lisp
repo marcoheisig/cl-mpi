@@ -48,13 +48,18 @@ THE SOFTWARE.
   "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It can
   transmit any object to a matching MPI-RECV-ANYTHING."
   (mpi-waitall-anything
-   (mpi-isend-anything object dest :comm comm :tag tag :encode encode :cleanup cleanup)))
+   (mpi-isend-anything object dest :comm comm :tag tag :encode encode :cleanup cleanup))
+  nil)
 
 (defun mpi-recv-anything (source &key (comm *standard-communicator*)
                                    (tag +mpi-any-tag+)
                                    (decode *standard-decode-function*))
-  (mpi-waitall-anything
-   (mpi-irecv-anything source :comm comm :tag tag :decode decode)))
+  "Returns three values, the transmitted object, the rank of the sending
+process and the tag of the message."
+  (destructuring-bind ((source tag data))
+      (mpi-waitall-anything
+       (mpi-irecv-anything source :comm comm :tag tag :decode decode))
+    (values data source tag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -98,18 +103,21 @@ THE SOFTWARE.
 (defun run-hook (request)
   (funcall (hook request)))
 
-(defun mpi-waitall-anything (&rest metadata-requests)
-  "Return a list of message descriptions. Each message description is of
-  the form (SOURCE TAG OBJECTS)."
-  (let ((data-requests (mapcar #'run-hook (apply #'mpi-waitall metadata-requests))))
+(defun mpi-waitall-anything (&rest requests)
+  "REQUESTS must be objects returned by MPI-ISEND-ANYTHING or
+  MPI-IRECV-ANYTHING. Block until all given requests have been
+  completed. Return a list with one (SOURCE TAG DATA) triple per
+  MPI-IRECV-ANYTHING request."
+  (let ((data-requests (mapcar #'run-hook (apply #'mpi-waitall requests))))
     (delete-if #'not (mapcar #'run-hook (apply #'mpi-waitall data-requests)))))
 
 (defun mpi-isend-anything (object dest &key (comm *standard-communicator*)
                                          (tag 0)
                                          (encode *standard-encode-function*)
                                          (cleanup *standard-cleanup-function*))
-  "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It can
-  transmit any object to a matching MPI-RECEIVE-ANYTHING."
+  "MPI-SEND-ANYTHING is a slower but more general variant of MPI-SEND. It
+  can transmit any object to a matching MPI-IRECV-ANYTHING when passed to
+  MPI-WAITALL-ANYTHING."
   (declare (type (signed-byte 32) dest tag)
            (type mpi-comm comm))
   (let* ((data-buffer
@@ -133,6 +141,8 @@ THE SOFTWARE.
 (defun mpi-irecv-anything (source &key (comm *standard-communicator*)
                                     (tag +mpi-any-tag+)
                                     (decode *standard-decode-function*))
+  "Returns a request that can be passed to MPI-WAITALL-ANYTHING to receive
+an arbitrary object from a matching MPI-ISEND-ANYTHING."
   (declare (type (signed-byte 32) source tag)
            (type mpi-comm comm))
   (let ((metadata-buffer
