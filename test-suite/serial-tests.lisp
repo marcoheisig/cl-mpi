@@ -8,7 +8,7 @@ communicator. This prevents errors within BODY to affect other parts of the
 program."
   `(let ((*standard-communicator* (mpi-comm-dup)))
     (unwind-protect
-         ,(progn ,@body)
+         (progn ,@body)
       (mpi-comm-free *standard-communicator*))))
 
 (test (mpi-wtime)
