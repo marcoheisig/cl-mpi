@@ -67,18 +67,48 @@ be 0.001")
 (defmpifun "MPI_Get_processor_name" (string *size))
 ;; (defmpifun "MPI_Get_version")
 (defmpifun "MPI_Init" (argc argv))
+(defmpifun "MPI_Init_thread" (argc argv (required mpi-thread-options) (provided :pointer)))
 (defmpifun "MPI_Initialized" (*flag))
 ;; (defmpifun "MPI_Win_call_errhandler")
 ;; (defmpifun "MPI_Win_create_errhandler")
 ;; (defmpifun "MPI_Win_get_errhandler")
 ;; (defmpifun "MPI_Win_set_errhandler")
 
-(defun mpi-init ()
+(defun mpi-init (&key (thread-support nil thread-support-p))
+  "Initialize MPI. If supplied, the keyword parameter THREAD-SUPPORT
+denotes the required level of thread support in MPI. It must be one of the
+following keywords:
+
+:MPI-THREAD-SINGLE - Only one thread will ever execute.
+
+:MPI-THREAD-FUNNELED - The process may be multi-threaded, but the
+  application must ensure that only the main thread makes MPI calls.
+
+:MPI-THREAD-SERIALIZED - The process may be multi-threaded, and multiple
+ threads may make MPI calls, but not concurrently from two distinct
+ threads.
+
+:MPI-THREAD-MULTIPLE - Multiple threads may call MPI, with no restrictions.
+
+An error is signaled when the MPI implementation fails to provide the
+required level of thread support."
   #-sbcl(reload-mpi-libraries)
   (unless (mpi-initialized)
     ;; Initialize cl-mpi constants like +MPI-COMM-WORLD+.
-   (initialize-mpi-constants)
-    (%mpi-init (null-pointer) (null-pointer))
+    (initialize-mpi-constants)
+    (if (not thread-support-p)
+        (%mpi-init (null-pointer) (null-pointer))
+        (let ((required
+                (cffi:foreign-enum-value 'mpi-thread-options thread-support))
+              (provided
+                (with-foreign-results ((provided :int))
+                  (%mpi-init-thread (null-pointer) (null-pointer)
+                                    thread-support provided))))
+          (when (> required provided)
+            (error "The required level of thread support is ~W,~@
+                    but this MPI implementation can only provide ~W."
+                   thread-support
+                   (cffi:foreign-enum-keyword 'mpi-thread-options provided)))))
     ;; by default MPI reacts to each failure by crashing the process. This is
     ;; not the Lisp way of doing things. The following call makes errors
     ;; non-fatal in most cases.

@@ -39,7 +39,7 @@ cl-mpi:  cl-mpi ~A~%"
     (assert (> size rank -1))
     ;; discard the output of all but one MPI process
     (with-single-output
-        (print-test-suite-banner *test-dribble*)
+      (print-test-suite-banner *test-dribble*)
       (run! 'mpi-serial-tests)
       (if (> size 1) ; check whether we run in parallel
           (run! 'mpi-parallel-tests)

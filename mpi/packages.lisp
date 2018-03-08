@@ -91,6 +91,7 @@
    #:+mpi-op-null+
    #:+mpi-request-null+
    #:+mpi-datatype-null+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; utilities.lisp
 
