@@ -67,6 +67,7 @@ be 0.001")
 (defmpifun "MPI_Get_processor_name" (string *size))
 ;; (defmpifun "MPI_Get_version")
 (defmpifun "MPI_Init" (argc argv))
+(defmpifun "MPI_Init_thread" (argc argv (required mpi-thread-options) (provided :pointer)))
 (defmpifun "MPI_Initialized" (*flag))
 ;; (defmpifun "MPI_Win_call_errhandler")
 ;; (defmpifun "MPI_Win_create_errhandler")
@@ -83,6 +84,34 @@ be 0.001")
     ;; not the Lisp way of doing things. The following call makes errors
     ;; non-fatal in most cases.
     (%mpi-comm-set-errhandler +mpi-comm-world+ +mpi-errors-return+)))
+
+(defun mpi-init-thread (&key (mode ':mpi-thread-multiple))
+  "Initialize MPI in threaded mode. The possible modes are:
+
+    :mpi-thread-single
+    :mpi-thread-funneled
+    :mpi-thread-serialized
+    :mpi-thread-multiple    (default)
+
+Return back the threaded mode MPI actually has provided."
+  (check-type mode (member :mpi-thread-single
+                           :mpi-thread-funneled
+                           :mpi-thread-serialized
+                           :mpi-thread-multiple))
+  #-sbcl(reload-mpi-libraries)
+  (unless (mpi-initialized)
+    ;; Initialize cl-mpi constants like +MPI-COMM-WORLD+.
+   (initialize-mpi-constants)
+
+   (prog1 (cffi:foreign-enum-keyword
+           'mpi-thread-options
+           (with-foreign-results ((provided :int))
+             (%mpi-init-thread (null-pointer) (null-pointer) mode provided)))
+     ;; by default MPI reacts to each failure by crashing the process. This is
+     ;; not the Lisp way of doing things. The following call makes errors
+     ;; non-fatal in most cases.
+     (%mpi-comm-set-errhandler +mpi-comm-world+ +mpi-errors-return+))))
+
 
 (defun mpi-finalize ()
    "This routines cleans up all MPI state. Once this routine is called, no MPI

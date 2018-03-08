@@ -137,6 +137,7 @@
    #:mpi-wtick
    #:mpi-finalize
    #:mpi-init
+   #:mpi-init-thread
    #:mpi-initialized
    #:mpi-finalized
    #:mpi-abort

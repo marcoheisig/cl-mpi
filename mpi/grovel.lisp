@@ -22,6 +22,12 @@
 (constant (+mpi-max-processor-name+ "MPI_MAX_PROCESSOR_NAME"))
 (constant (+mpi-max-error-string+ "MPI_MAX_ERROR_STRING"))
 
+(cenum (mpi-thread-options :base-type :int)
+       ((:mpi-thread-single "MPI_THREAD_SINGLE"))
+       ((:mpi-thread-funneled "MPI_THREAD_FUNNELED"))
+       ((:mpi-thread-serialized "MPI_THREAD_SERIALIZED"))
+       ((:mpi-thread-multiple "MPI_THREAD_MULTIPLE")))
+
 (cstruct mpi-status "MPI_Status"
          (mpi-source "MPI_SOURCE" :type :int)
          (mpi-tag "MPI_TAG" :type :int)
