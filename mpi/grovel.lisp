@@ -6,8 +6,15 @@
 
 ;;; optional and MPI implementation specific constants
 (constant (|MPICH| "MPICH") :optional t)
+(constant (|MPICH_VERSION| "MPICH_VERSION") :optional t)
+
 (constant (|MPICH2| "MPICH2") :optional t)
+(constant (|MPICH2_VERSION| "MPICH2_VERSION") :optional t)
+
 (constant (|OPEN_MPI| "OPEN_MPI") :optional t)
+(constant (|OPEN_MPI_MAJOR_VERSION| "OMPI_MAJOR_VERSION") :optional t)
+(constant (|OPEN_MPI_MINOR_VERSION| "OMPI_MINOR_VERSION") :optional t)
+(constant (|OPEN_MPI_RELEASE_VERSION| "OMPI_RELEASE_VERSION") :optional t)
 
 ;;; standardized MPI constants
 

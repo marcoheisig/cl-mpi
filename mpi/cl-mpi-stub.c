@@ -1,24 +1,6 @@
 
 #include <mpi.h>
 
-#define xstr(s) str(s)
-#define str(s) #s
-
-#ifdef MPICH_VERSION
-#define MPI_IMPLEMENTATION_VERSION "MPICH " MPICH_VERSION
-#elif MPICH2_VERSION
-#define MPI_IMPLEMENTATION_VERSION "MPICH2 " MPICH2_VERSION
-#elif OMPI_MAJOR_VERSION
-#define MPI_IMPLEMENTATION_VERSION \
-    "Open MPI " xstr(OMPI_MAJOR_VERSION) "." xstr(OMPI_MINOR_VERSION) "." xstr(OMPI_RELEASE_VERSION)
-#else
-#define MPI_IMPLEMENTATION_VERSION ""
-#endif
-
-char* cl_mpi_get_MPI_LIBRARY() {
-    return MPI_IMPLEMENTATION_VERSION;
-}
-
 /*
   Unfortunately MPI makes no guarantees on the data type of its fundamental
   constants (MPI_COMM_WORLD and the like). In practice, MPICH and its
@@ -88,9 +70,3 @@ defgetter( MPI_Op, MPI_REPLACE )
 defgetter( MPI_Op, MPI_OP_NULL )
 defgetter( MPI_Request, MPI_REQUEST_NULL )
 defgetter( MPI_Status*, MPI_STATUS_IGNORE )
-
-int cl_mpi_some_dummy_function() {
-    int flag;
-    MPI_Initialized(&flag);
-    return flag;
-}
