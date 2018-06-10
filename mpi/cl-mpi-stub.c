@@ -71,8 +71,3 @@ defgetter( MPI_Op, MPI_OP_NULL )
 defgetter( MPI_Request, MPI_REQUEST_NULL )
 defgetter( MPI_Status*, MPI_STATUS_IGNORE )
 
-int cl_mpi_some_dummy_function() {
-    int flag;
-    MPI_Initialized(&flag);
-    return flag;
-}
