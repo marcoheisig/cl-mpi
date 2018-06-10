@@ -169,6 +169,18 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
   "A string describing the MPI library that CL-MPI uses to send its
   messages. Something like \"Open MPI 1.6.2\" ")
 
+(defun get-mpi-library-version ()
+  "Return a string indicating the version of the specific MPI library that
+has been groveled at compile time."
+  (cond
+    ((boundp '|MPICH|) (format nil "MPICH ~D" (symbol-value '|MPICH_VERSION|)))
+    ((boundp '|MPICH2|) (format nil "MPICH2 ~D" (symbol-value '|MPICH2_VERSION|)))
+    ((boundp '|OPEN_MPI|) (format nil "Open MPI ~D.~D.~D"
+                                  (symbol-value '|OPEN_MPI_MAJOR_VERSION|)
+                                  (symbol-value '|OPEN_MPI_MINOR_VERSION|)
+                                  (symbol-value '|OPEN_MPI_RELEASE_VERSION|)))
+    (t "")))
+
 (defun initialize-mpi-constants ()
   "Initialize (or reinitialize) all objects denoted by the symbols in
   *MPI-CONSTANTS* to their values in the underlying MPI C library."
@@ -181,8 +193,7 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
   ;; not of type MPI-OBJECT
   (setf +mpi-status-ignore+
         (mpi-symbol-value '+mpi-status-ignore+ :pointer))
-  (setf +mpi-library+
-        (mpi-symbol-value '+mpi-library+ :string)))
+  (setf +mpi-library+ (get-mpi-library-version)))
 
 (defmacro define-mpi-constant (class-sym name-sym)
   `(progn
