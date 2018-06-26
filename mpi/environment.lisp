@@ -92,7 +92,6 @@ following keywords:
 
 An error is signaled when the MPI implementation fails to provide the
 required level of thread support."
-  #-sbcl(reload-mpi-libraries)
   (unless (mpi-initialized)
     ;; Initialize cl-mpi constants like +MPI-COMM-WORLD+.
     (initialize-mpi-constants)

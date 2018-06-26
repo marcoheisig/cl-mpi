@@ -169,7 +169,7 @@ THE SOFTWARE.
       (setf (mem-ref handle 'mpi-group) group)
       (%mpi-group-free handle)
       (setf (mpi-object-handle group)
-            (mem-ref handle #.+mpi-object-handle-cffi-type+)))))
+            (mem-ref handle #.foreign-mpi-object-type)))))
 
 (defun mpi-comm-size (&optional (comm *standard-communicator*))
   "Indicates the number of processes involved in a communicator. For
@@ -197,5 +197,5 @@ THE SOFTWARE.
     (setf (mem-ref handle 'mpi-comm) comm)
     (%mpi-comm-free handle)
     (setf (mpi-object-handle comm)
-          (mem-ref handle #.+mpi-object-handle-cffi-type+)))
+          (mem-ref handle #.foreign-mpi-object-type)))
   comm)

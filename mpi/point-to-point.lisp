@@ -109,7 +109,7 @@ of at least SIZE bytes."
       (%mpi-sendrecv
        send-buf send-count send-type dest send-tag
        recv-buf recv-count recv-type source recv-tag
-       comm +mpi-status-ignore+))))
+       comm (cffi:null-pointer)))))
 
 (defun mpi-send (array dest &key (comm *standard-communicator*)
                               start end
@@ -174,7 +174,7 @@ been received."
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array start end)
     ;; TODO check the mpi-status
-    (%mpi-recv ptr count type source tag comm +mpi-status-ignore+)))
+    (%mpi-recv ptr count type source tag comm (cffi:null-pointer))))
 
 (defun mpi-irecv (array source &key (comm *standard-communicator*)
                                  start end
@@ -240,7 +240,7 @@ request whose matching operation has been issued will eventually succeed."
     (setf (mem-ref request* 'mpi-request) request)
     (%mpi-test request* flag* status*)
     (setf (mpi-object-handle request)
-          (mem-ref request* #.+mpi-object-handle-cffi-type+))
+          (mem-ref request* #.foreign-mpi-object-type))
     (values (not (zerop (mem-ref flag* :int))) request)))
 
 (defun mpi-wait (request)
@@ -251,7 +251,7 @@ request whose matching operation has been issued will eventually succeed."
     (setf (mem-ref request* 'mpi-request) request)
     (%mpi-wait request* status*)
     (setf (mpi-object-handle request)
-          (mem-ref request* #.+mpi-object-handle-cffi-type+))
+          (mem-ref request* #.foreign-mpi-object-type))
     request))
 
 (defun mpi-waitall (&rest requests)
@@ -267,5 +267,5 @@ returns REQUESTS."
       (loop for request in requests
             and i below n-requests do
               (setf (mpi-object-handle request)
-                    (mem-aref requests* #.+mpi-object-handle-cffi-type+ i)))
+                    (mem-aref requests* #.foreign-mpi-object-type)))
       requests)))

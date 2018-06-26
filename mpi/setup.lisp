@@ -1,6 +1,6 @@
 #| -*- Mode: Lisp; indent-tabs-mode: nil -*-
 
-MPI setup - definition of CFFI and CLOS wrapper types and methods
+Definition of fundamental MPI constants and types.
 
 Copyright (C) 2014,2015  Marco Heisig <marco.heisig@fau.de>
 
@@ -25,61 +25,68 @@ THE SOFTWARE.
 
 (in-package :cl-mpi)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (define-constant +mpi-version+
-      (format nil "~d.~d" |MPI_VERSION| |MPI_SUBVERSION|)
-    :test #'string-equal)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Error Handling
+;;;
+;;; (Almost) all MPI functions return a status code as an integer. In
+;;; cl-mpi, the user never sees the status code at all. It is automatically
+;;; checked and converted to a condition.
 
-  (cond
-    ((boundp '|OPEN_MPI|)
-     (defconstant +mpi-object-handle-cffi-type+ :pointer))
-    (t
-     (defconstant +mpi-object-handle-cffi-type+ :int))))
+(define-condition mpi-error-condition (error)
+  ((%error-code :initarg :error-code :reader error-code))
+  (:report
+   (lambda (c stream)
+     (princ (mpi-error-string (error-code c))
+            stream)))
+  (:documentation
+   "Signaled when a MPI function returns a status code other than MPI_SUCCESS."))
+
+(defun signal-mpi-error (value)
+  (cerror "Ignore the error."
+          'mpi-error-condition :error-code value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Version Information
+
+(define-constant +mpi-version+
+    (format nil "~d.~d" |MPI_VERSION| |MPI_SUBVERSION|)
+  :test #'string-equal
+  :documentation
+  "The version of the MPI standard supported by the underlying implementation.")
+
+(define-constant +mpi-library+
+    (cond
+      ((boundp '|MPICH|)
+       (format nil "MPICH ~D" (symbol-value '|MPICH_VERSION|)))
+      ((boundp '|MPICH2|)
+       (format nil "MPICH2 ~D" (symbol-value '|MPICH2_VERSION|)))
+      ((boundp '|OPEN_MPI|)
+       (format nil "Open MPI ~D.~D.~D"
+               (symbol-value '|OPEN_MPI_MAJOR_VERSION|)
+               (symbol-value '|OPEN_MPI_MINOR_VERSION|)
+               (symbol-value '|OPEN_MPI_RELEASE_VERSION|)))
+      (t "Unkown"))
+  :test #'string-equal
+  :documentation
+  "A string describing the MPI library that CL-MPI uses to send its
+  messages. Something like \"Open MPI 1.6.2\".")
 
 (defmacro since-mpi-version (version &body body)
   (when (version<= version +mpi-version+)
     `(progn ,@body)))
 
-(defun lisp-constant-accessor-name (symbol)
-  "Translate the symbol SYMBOL to a string denoting its C language accessor function.
-
-Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
-  (let ((name (symbol-name symbol)))
-    (concatenate
-     'string "cl_mpi_get_"
-     (string-upcase
-      (substitute
-       #\_ #\-
-       (subseq name 1 (- (length name) 1)))))))
-
-;;; (Almost) all MPI functions return a status code as an integer. In cl-mpi,
-;;; the user never sees the status code at all. It is automatically checked
-;;; and converted to a condition.
-(define-condition mpi-error-condition (error)
-  ((error-code :initarg :error-code :reader error-code))
-  (:report
-   (lambda (c stream)
-     (princ (mpi-error-string (error-code c))
-            stream)))
-  (:documentation "Signalled when a MPI function returns a code other than MPI_SUCCESS."))
-
-(defun signal-mpi-error (value)
-  (restart-case
-      (error 'mpi-error-condition :error-code value)
-    (ignore () nil)))
-
-;;; some deftypes for the most common types handled by MPI
-(deftype int () '(signed-byte 32))
-(deftype index () '(or null (integer 0 #.array-total-size-limit)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Handling of Foreign Types
+;;;
 ;;; There is a plethora of types in MPI. We represent them as a subclass of
 ;;; MPI-OBJECT and provide appropriate CFFI wrapper types of the form
 ;;; <CLASSNAME>-type.
 
 (defclass mpi-object ()
-  ((%handle
-    :accessor mpi-object-handle
-    :initarg :handle)))
+  ((%handle :accessor mpi-object-handle :initarg :handle)))
 
 (defclass mpi-errhandler (mpi-object) ())
 
@@ -95,9 +102,22 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
 
 (defclass mpi-request (mpi-object) ())
 
+;;; some deftypes for the most common types handled by MPI
+(deftype int () '(signed-byte 32))
+
+(deftype index () '(or null (integer 0 #.array-total-size-limit)))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant foreign-mpi-object-type
+      (if (boundp '|OPEN_MPI|) :pointer :int)))
+
 (define-foreign-type mpi-object-type ()
   () (:actual-type
-      #.+mpi-object-handle-cffi-type+))
+      ;; The MPI standard does not prescribe the C type of several of its
+      ;; objects.  In practice, this means that OpenMPI represents its
+      ;; objects as pointers to structs, while MPICH and its derivatives
+      ;; represent them with ints.
+      #.foreign-mpi-object-type))
 
 (define-foreign-type mpi-errhandler-type (mpi-object-type)
   () (:simple-parser mpi-errhandler))
@@ -131,14 +151,12 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
 (defmethod expand-to-foreign (value (type mpi-object-type))
   `(mpi-object-handle ,value))
 
-(defmethod expand-from-foreign (value (type mpi-object-type))
-  (make-instance 'mpi-object :handle value))
-
 (defmethod expand-from-foreign (value (type mpi-error-type))
   (let ((return-value (gensym)))
     `(let ((,return-value ,value))
        (unless (zerop ,return-value)
-         (signal-mpi-error ,return-value)))))
+         (signal-mpi-error ,return-value))
+       (values))))
 
 (defmethod expand-from-foreign (value (type mpi-object-type))
   (let ((instance-type
@@ -150,117 +168,88 @@ Example: +mpi-comm-world+ -> \"cl_mpi_get_MPI-COMM-WORLD\""
             (mpi-op-type 'mpi-op)
             (mpi-info-type 'mpi-info)
             (mpi-request-type 'mpi-request))))
-    `(make-instance
-      ',instance-type
-      :handle ,value)))
+    `(make-instance ',instance-type :handle ,value)))
 
-(defvar *mpi-constants* ())
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Accessing MPI constants.
 
-(defmacro mpi-symbol-value (symbol &optional cffi-type)
-  (let ((type (or cffi-type +mpi-object-handle-cffi-type+)))
-    `(foreign-funcall-pointer
-      (foreign-symbol-pointer
-       (lisp-constant-accessor-name ,symbol))
-      () ,type)))
+;; Each entry in this list is of the form (object c-name reader)
+(defvar *mpi-constant-table* '())
 
-(defvar +mpi-status-ignore+ nil)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (flet ((reader-symbol (c-name)
+           (intern
+            (concatenate 'string "cl_mpi_get_" c-name)))
+         (lisp-symbol (c-name)
+           (intern
+            (format nil "+~A+" (substitute #\- #\_ (string-upcase c-name))))))
+    (defmacro define-mpi-constant (class c-name)
+      `(defvar ,(lisp-symbol c-name)
+         (let ((object (make-instance ',class)))
+           (pushnew (list object ',c-name ',(reader-symbol c-name))
+                    *mpi-constant-table*
+                    :test #'string= :key #'second)
+           object)))))
 
-(defvar +mpi-library+ ""
-  "A string describing the MPI library that CL-MPI uses to send its
-  messages. Something like \"Open MPI 1.6.2\" ")
-
-(defun compute-mpi-library-version ()
-  "Return a string indicating the version of the specific MPI library that
-has been groveled at compile time."
-  (cond
-    ((boundp '|MPICH|) (format nil "MPICH ~D" (symbol-value '|MPICH_VERSION|)))
-    ((boundp '|MPICH2|) (format nil "MPICH2 ~D" (symbol-value '|MPICH2_VERSION|)))
-    ((boundp '|OPEN_MPI|) (format nil "Open MPI ~D.~D.~D"
-                                  (symbol-value '|OPEN_MPI_MAJOR_VERSION|)
-                                  (symbol-value '|OPEN_MPI_MINOR_VERSION|)
-                                  (symbol-value '|OPEN_MPI_RELEASE_VERSION|)))
-    (t "Unkown")))
-
-(defun initialize-mpi-constants ()
-  "Initialize (or reinitialize) all objects denoted by the symbols in
-  *MPI-CONSTANTS* to their values in the underlying MPI C library."
-  (mapc
-   (lambda (sym)
-     (setf (mpi-object-handle (symbol-value sym))
-           (mpi-symbol-value sym)))
-   *mpi-constants*)
-  ;; These 'constants' are different from the ones above, because they are
-  ;; not of type MPI-OBJECT
-  (setf +mpi-status-ignore+
-        (mpi-symbol-value '+mpi-status-ignore+ :pointer))
-  (setf +mpi-library+
-        (compute-mpi-library-version)))
-
-(defmacro define-mpi-constant (class-sym name-sym)
-  `(progn
-     (defvar ,name-sym
-       (make-instance ',class-sym))
-     (pushnew ',name-sym *mpi-constants*)))
-
-;;; Despite the naming scheme (e.g. +MPI-COMM-WORLD+), MPI constants are not
-;;; Lisp constants, because the underlying handles might be pointers to the
-;;; heap and need to be updated after dynamic linkage and each restart of a
-;;; lisp image.
-(define-mpi-constant mpi-errhandler +mpi-errors-return+)
-(define-mpi-constant mpi-errhandler +mpi-errors-are-fatal+)
-(define-mpi-constant mpi-group +mpi-group-empty+)
-(define-mpi-constant mpi-comm +mpi-comm-world+)
-(define-mpi-constant mpi-comm +mpi-comm-self+)
-(define-mpi-constant mpi-datatype +mpi-datatype-null+)
-(define-mpi-constant mpi-datatype +mpi-lb+)
-(define-mpi-constant mpi-datatype +mpi-ub+)
-(define-mpi-constant mpi-datatype +mpi-char+)
-(define-mpi-constant mpi-datatype +mpi-signed-char+)
-(define-mpi-constant mpi-datatype +mpi-unsigned-char+)
-(define-mpi-constant mpi-datatype +mpi-byte+)
-(define-mpi-constant mpi-datatype +mpi-short+)
-(define-mpi-constant mpi-datatype +mpi-unsigned-short+)
-(define-mpi-constant mpi-datatype +mpi-int+)
-(define-mpi-constant mpi-datatype +mpi-unsigned+)
-(define-mpi-constant mpi-datatype +mpi-long+)
-(define-mpi-constant mpi-datatype +mpi-unsigned-long+)
-(define-mpi-constant mpi-datatype +mpi-long-long-int+)
-(define-mpi-constant mpi-datatype +mpi-unsigned-long-long+)
-(define-mpi-constant mpi-datatype +mpi-float+)
-(define-mpi-constant mpi-datatype +mpi-double+)
-(define-mpi-constant mpi-datatype +mpi-long-double+)
-(define-mpi-constant mpi-datatype +mpi-wchar+)
-(define-mpi-constant mpi-datatype +mpi-c-bool+)
+(define-mpi-constant mpi-errhandler "MPI_ERRORS_RETURN")
+(define-mpi-constant mpi-errhandler "MPI_ERRORS_ARE_FATAL")
+(define-mpi-constant mpi-errhandler "MPI_ERRHANDLER_NULL")
+(define-mpi-constant mpi-group "MPI_GROUP_EMPTY")
+(define-mpi-constant mpi-group "MPI_GROUP_NULL")
+(define-mpi-constant mpi-comm "MPI_COMM_WORLD")
+(define-mpi-constant mpi-comm "MPI_COMM_SELF")
+(define-mpi-constant mpi-comm "MPI_COMM_NULL")
+(define-mpi-constant mpi-datatype "MPI_DATATYPE_NULL")
+(define-mpi-constant mpi-datatype "MPI_LB")
+(define-mpi-constant mpi-datatype "MPI_UB")
+(define-mpi-constant mpi-datatype "MPI_CHAR")
+(define-mpi-constant mpi-datatype "MPI_SIGNED_CHAR")
+(define-mpi-constant mpi-datatype "MPI_UNSIGNED_CHAR")
+(define-mpi-constant mpi-datatype "MPI_BYTE")
+(define-mpi-constant mpi-datatype "MPI_SHORT")
+(define-mpi-constant mpi-datatype "MPI_UNSIGNED_SHORT")
+(define-mpi-constant mpi-datatype "MPI_INT")
+(define-mpi-constant mpi-datatype "MPI_UNSIGNED")
+(define-mpi-constant mpi-datatype "MPI_LONG")
+(define-mpi-constant mpi-datatype "MPI_UNSIGNED_LONG")
+(define-mpi-constant mpi-datatype "MPI_LONG_LONG_INT")
+(define-mpi-constant mpi-datatype "MPI_UNSIGNED_LONG_LONG")
+(define-mpi-constant mpi-datatype "MPI_FLOAT")
+(define-mpi-constant mpi-datatype "MPI_DOUBLE")
+(define-mpi-constant mpi-datatype "MPI_LONG_DOUBLE")
+(define-mpi-constant mpi-datatype "MPI_WCHAR")
+(define-mpi-constant mpi-datatype "MPI_C_BOOL")
 (since-mpi-version "2.2"
-  (define-mpi-constant mpi-datatype +mpi-int8-t+)
-  (define-mpi-constant mpi-datatype +mpi-int16-t+)
-  (define-mpi-constant mpi-datatype +mpi-int32-t+)
-  (define-mpi-constant mpi-datatype +mpi-int64-t+)
-  (define-mpi-constant mpi-datatype +mpi-uint8-t+)
-  (define-mpi-constant mpi-datatype +mpi-uint16-t+)
-  (define-mpi-constant mpi-datatype +mpi-uint32-t+)
-  (define-mpi-constant mpi-datatype +mpi-uint64-t+))
-(define-mpi-constant mpi-datatype +mpi-packed+)
-(define-mpi-constant mpi-op +mpi-min+)
-(define-mpi-constant mpi-op +mpi-max+)
-(define-mpi-constant mpi-op +mpi-sum+)
-(define-mpi-constant mpi-op +mpi-prod+)
-(define-mpi-constant mpi-op +mpi-land+)
-(define-mpi-constant mpi-op +mpi-band+)
-(define-mpi-constant mpi-op +mpi-lor+)
-(define-mpi-constant mpi-op +mpi-bor+)
-(define-mpi-constant mpi-op +mpi-lxor+)
-(define-mpi-constant mpi-op +mpi-bxor+)
-(define-mpi-constant mpi-op +mpi-maxloc+)
-(define-mpi-constant mpi-op +mpi-minloc+)
-(define-mpi-constant mpi-op +mpi-replace+)
-
-;;; null handles
-(define-mpi-constant mpi-group +mpi-group-null+)
-(define-mpi-constant mpi-comm +mpi-comm-null+)
-(define-mpi-constant mpi-op +mpi-op-null+)
-(define-mpi-constant mpi-request +mpi-request-null+)
-(define-mpi-constant mpi-errhandler +mpi-errhandler-null+)
+  (define-mpi-constant mpi-datatype "MPI_INT8_T")
+  (define-mpi-constant mpi-datatype "MPI_INT16_T")
+  (define-mpi-constant mpi-datatype "MPI_INT32_T")
+  (define-mpi-constant mpi-datatype "MPI_INT64_T")
+  (define-mpi-constant mpi-datatype "MPI_UINT8_T")
+  (define-mpi-constant mpi-datatype "MPI_UINT16_T")
+  (define-mpi-constant mpi-datatype "MPI_UINT32_T")
+  (define-mpi-constant mpi-datatype "MPI_UINT64_T"))
+(define-mpi-constant mpi-datatype "MPI_PACKED")
+(define-mpi-constant mpi-op "MPI_MIN")
+(define-mpi-constant mpi-op "MPI_MAX")
+(define-mpi-constant mpi-op "MPI_SUM")
+(define-mpi-constant mpi-op "MPI_PROD")
+(define-mpi-constant mpi-op "MPI_LAND")
+(define-mpi-constant mpi-op "MPI_BAND")
+(define-mpi-constant mpi-op "MPI_LOR")
+(define-mpi-constant mpi-op "MPI_BOR")
+(define-mpi-constant mpi-op "MPI_LXOR")
+(define-mpi-constant mpi-op "MPI_BXOR")
+(define-mpi-constant mpi-op "MPI_MAXLOC")
+(define-mpi-constant mpi-op "MPI_MINLOC")
+(define-mpi-constant mpi-op "MPI_REPLACE")
+(define-mpi-constant mpi-op "MPI_OP_NULL")
+(define-mpi-constant mpi-request "MPI_REQUEST_NULL")
 
 (declaim (type mpi-comm *standard-communicator*))
 (defvar *standard-communicator* +mpi-comm-world+)
+
+(defun initialize-mpi-constants ()
+  (loop for (object nil reader-name) in *mpi-constant-table*
+        do (setf (mpi-object-handle object)
+                 (funcall reader-name))))

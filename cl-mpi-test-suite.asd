@@ -1,4 +1,4 @@
-(in-package :asdf-user)
+(cl:in-package #:asdf-user)
 
 (defsystem :cl-mpi-test-suite
   :description "The cl-mpi test suite"

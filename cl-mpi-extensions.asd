@@ -1,4 +1,4 @@
-(in-package :asdf-user)
+(cl:in-package #:asdf-user)
 
 (defsystem :cl-mpi-extensions
   :depends-on (:cl-mpi :cffi :cl-conspack)
