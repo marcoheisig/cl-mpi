@@ -56,7 +56,7 @@ installation folder):
 #+BEGIN_SRC sh
 git clone git://git.code.sf.net/p/sbcl/sbcl
 cd sbcl
-sh make.sh --prefix=SOMEWHERE --fancy --with-sb-linkable-runtime --with-sb-dynamic-core --dynamic-space-size=10Gb
+sh make.sh --prefix=SOMEWHERE --fancy --with-sb-linkable-runtime --with-sb-dynamic-core
 cd tests && sh run-tests.sh
 sh install.sh
 #+END_SRC
