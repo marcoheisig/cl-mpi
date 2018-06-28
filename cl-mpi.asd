@@ -13,7 +13,7 @@ communication overhead with a latency in the range of microseconds. In
 comparison to the C or FORTRAN interface of MPI, cl-mpi relieves the
 programmer from working with raw pointers to memory and a plethora of
 mandatory function arguments."
-  :defsystem-depends-on (:cl-mpi-grovel)
+  :defsystem-depends-on (:cl-mpi-asdf-integration)
   :depends-on (:alexandria :uiop :cffi :static-vectors)
   :in-order-to ((test-op (test-op "cl-mpi-test-suite")))
   :components
@@ -23,13 +23,13 @@ mandatory function arguments."
     ((:file "packages")
 
      ;; Extract all constants from "mpi.h".
-     ("cl-mpi-grovel:mpi-grovel-file" "grovel")
+     (:mpi-grovel-file "grovel")
 
      ;; Derive MPI implementation dependent constants.
      (:file "setup")
 
      ;; Create a small library to portably access the MPI runtime.
-     ("cl-mpi-grovel:mpi-wrapper-file" "wrap")
+     (:mpi-wrapper-file "wrap")
 
      ;; MPI related utilities.
      (:file "utilities")

@@ -1,13 +1,11 @@
-#!/bin/sh
-":" ; exec cl-launch -Q -s cl-mpi -E main -X -- "$0" "$@" || exit || echo " -*- mode: Lisp -*- "
-
 ;; A simple benchmark, where a message is sent back and forth between pairs
 ;; of processors
 
 (in-package :cl-user)
 
 (defpackage :cl-mpi/examples/pingpong
-  (:use :cl :alexandria :cl-mpi :static-vectors))
+  (:use :cl :alexandria :cl-mpi :static-vectors)
+  (:export #:main))
 (in-package :cl-mpi/examples/pingpong)
 
 (defun printf (fmt &rest args)
@@ -25,8 +23,7 @@
     (die "pingpong requires an even number of processors~%")
     (mpi-finalize)
     (uiop:quit))
-  (let ((rank (mpi-comm-rank))
-        (size (mpi-comm-size)))
+  (let ((rank (mpi-comm-rank)))
     (cond ((evenp rank) (1+ rank))
           ((oddp rank) (1- rank)))))
 
@@ -61,7 +58,7 @@
                           (/ usec iterations 2)
                           (/ (* message-size iterations 2) usec))))))))
 
-(defun cl-user::main (&optional args)
+(defun main (&optional args)
   (mpi-init)
   (let ((parsed-args (mapcar
                       (lambda (arg)

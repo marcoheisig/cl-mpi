@@ -13,6 +13,5 @@
                 ,reader-name
                 ,(cffi::canonicalize-foreign-type
                   (class-name
-                   (class-of object)))
-              ()
+                   (class-of object))) ()
               ,(format nil "return ~A;" c-name))))

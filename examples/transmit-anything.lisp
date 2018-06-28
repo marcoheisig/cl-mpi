@@ -1,6 +1,3 @@
-#!/bin/sh
-":" ; exec cl-launch -Q -s cl-mpi-extensions -E main -X -- "$0" "$@" || exit || echo " -*- mode: Lisp -*- "
-
 ;;; A demonstration of the transmit-anything extension of cl-mpi
 ;;;
 ;;; Every rank greets his left and right neighbor by sending a list of a
@@ -16,7 +13,7 @@
   (apply #'format t fmt args)
   (finish-output))
 
-(defun cl-user::main (&optional arg)
+(defun main (&optional arg)
   (declare (ignorable arg))
   (mpi-init)
   (let* ((*random-state* (make-random-state))

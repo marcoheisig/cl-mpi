@@ -1,6 +1,3 @@
-#!/bin/sh
-":" ; exec cl-launch -Q -s cl-mpi -E main -X -- "$0" "$@" || exit || echo " -*- mode: Lisp -*- "
-
 ;;; A one dimensional cellular automaton.
 ;;;
 ;;; This example is particularly interesting as it works with bit
@@ -11,7 +8,8 @@
 (in-package :cl-user)
 
 (defpackage :cl-mpi/examples/cellular
-  (:use :cl :alexandria :cl-mpi :static-vectors))
+  (:use :cl :alexandria :cl-mpi :static-vectors)
+  (:export #:main))
 (in-package :cl-mpi/examples/cellular)
 
 (defun printf (fmt &rest args)
@@ -147,7 +145,7 @@
             ;; sync is only required every 8th iteration
             (synchronize v1 b1 b2 b3 b4)))))))
 
-(defun cl-user::main (&optional args)
+(defun main (&optional args)
   (mpi-init)
   (let ((N (or (parse-integer (or (car args) "") :junk-allowed t)
                (print-usage)

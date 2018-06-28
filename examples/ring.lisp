@@ -1,13 +1,11 @@
-#!/bin/sh
-":" ; exec cl-launch -Q -s cl-mpi -E main -X -- "$0" "$@" || exit || echo " -*- mode: Lisp -*- "
-
 ;;; all participating processes pass a given message in a circle until it
 ;;; reaches again the original sender (here rank 0)
 
 (in-package :cl-user)
 
 (defpackage :cl-mpi/examples/ring
-  (:use :cl :alexandria :cl-mpi :static-vectors))
+  (:use :cl :alexandria :cl-mpi :static-vectors)
+  (:export #:main))
 (in-package :cl-mpi/examples/ring)
 
 (defun printf (fmt &rest args)
@@ -15,7 +13,7 @@
   (apply #'format t fmt args)
   (finish-output))
 
-(defun cl-user::main (&optional arg)
+(defun main (&optional arg)
   (declare (ignorable arg))
   (mpi-init)
   (let* ((message "foobar")
