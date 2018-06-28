@@ -16,14 +16,11 @@ cl-mpi has been tested with MPICH, MPICH2, IntelMPI and Open MPI.
 ** Usage
 An MPI program must be launched with =mpirun= or =mpiexec=. These commands
 spawn multiple processes depending on your system and commandline
-parameters. Each process is identical, except that it has a unique rank that
-can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
-=(- (MPI-COMM-SIZE) 1)=.
-
-A wide range of communication functions is available to transmit messages
-between different ranks.
-
-To become familiar with cl-mpi, see the [[file:examples/][examples directory]].
+parameters. Each process is identical, except that it has a unique rank
+that can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0
+to =(- (MPI-COMM-SIZE) 1)=. A wide range of communication functions is
+available to transmit messages between different ranks. To become familiar
+with cl-mpi, see the [[file:examples/][examples directory]].
 
 The easiest way to deploy and run cl-mpi applications is by creating a
 statically linked binary.  To do so, create a separate ASDF system like
@@ -52,12 +49,9 @@ Alternatively, you can try to use uiop:dump-image to create binaries.
 Further remark: If the creation of statically linked binaries with SBCL
 fails with something like "undefined reference to main", your SBCL is
 probably not built with the =:sb-linkable-runtime= feature.  You are
-affected by this when
-#+BEGIN_SRC lisp
-(find :sb-linkable-runtime *features*)
-#+END_SRC
-returns NIL. In that case, you have to compile SBCL yourself, which is as
-simple as executing the following commands (where SOMEWHERE is the desired
+affected by this when =(find :sb-linkable-runtime *features*)= returns
+NIL. In that case, you have to compile SBCL yourself, which is as simple as
+executing the following commands (where SOMEWHERE is the desired
 installation folder):
 #+BEGIN_SRC sh
 git clone git://git.code.sf.net/p/sbcl/sbcl
