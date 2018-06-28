@@ -23,20 +23,48 @@ can be queried with =(MPI-COMM-RANK)=. The ranks are assigned from 0 to
 A wide range of communication functions is available to transmit messages
 between different ranks.
 
-To become familiar with cl-mpi, see the [[file:examples/][examples directory]]. When [[http://cliki.net/CL-Launch][cl-launch]] is
-installed, each test can be invoked like this:
-#+BEGIN_SRC sh :results output
-mpiexec -n 3 ./examples/ring.lisp
+To become familiar with cl-mpi, see the [[file:examples/][examples directory]].
+
+The easiest way to deploy and run cl-mpi applications is by creating a
+statically linked binary.  To do so, create a separate ASDF system like
+this:
+#+BEGIN_SRC lisp
+(defsystem :my-mpi-app
+  :depends-on (:cl-mpi)
+  :defsystem-depends-on (:cl-mpi-asdf-integration)
+  :class :mpi-program
+  :build-operation :static-program-op
+  :build-pathname "my-mpi-app"
+  :entry-point "my-mpi-app:main"
+  :serial t
+  :components
+  ((:file "foo") (:file "bar")))
 #+END_SRC
 
-However, it is usually faster and more resource-friendly to first compile
-your Lisp application to a stand-alone executable and than launch it with
-=mpiexec=. To illustrate this, the [[file:scripts/][scripts directory]] contains a script
-[[file:scripts/build-cl-mpi-application.sh][build-cl-mpi-application.sh]] (that is just a very thin layer on top of
-cl-launch) that can be used like this:
-#+BEGIN_SRC sh results output
-./scripts/build-cl-mpi-application.sh ./examples/ring.lisp ring
-mpiexec -n 4 ring
+and simply run
+#+BEGIN_SRC lisp
+(asdf:make :my-mpi-app)
+#+END_SRC
+on the REPL.  Note that not all Lisp implementation support the creation of
+statically linked binaries (actually, we only tested SBCL so far).
+Alternatively, you can try to use uiop:dump-image to create binaries.
+
+Further remark: If the creation of statically linked binaries with SBCL
+fails with something like "undefined reference to main", your SBCL is
+probably not built with the =:sb-linkable-runtime= feature.  You are
+affected by this when
+#+BEGIN_SRC lisp
+(find :sb-linkable-runtime *features*)
+#+END_SRC
+returns NIL. In that case, you have to compile SBCL yourself, which is as
+simple as executing the following commands (where SOMEWHERE is the desired
+installation folder):
+#+BEGIN_SRC sh
+git clone git://git.code.sf.net/p/sbcl/sbcl
+cd sbcl
+sh make.sh --prefix=SOMEWHERE --fancy --with-sb-linkable-runtime --with-sb-dynamic-core --dynamic-space-size=10Gb
+cd tests && sh run-tests.sh
+sh install.sh
 #+END_SRC
 
 ** Testing
