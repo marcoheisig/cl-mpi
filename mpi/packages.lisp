@@ -32,7 +32,6 @@
    #:mpi-request
 
    ;; MPI constants
-   #:+mpi-status-ignore+
    #:+mpi-library+
    #:+mpi-implementation+
    #:+mpi-implementation-version+
