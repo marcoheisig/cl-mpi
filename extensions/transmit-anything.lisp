@@ -76,7 +76,7 @@ process and the tag of the message."
            (type mpi-comm comm))
   (cond
     ((= root (mpi-comm-rank))
-     (let* ((sendbuf (funcall encode object :stream :static))
+     (let* ((sendbuf (funcall encode object))
             (size (make-static-vector 1 :element-type '(signed-byte 64)
                                         :initial-element (length sendbuf))))
        (mpi-bcast size root :comm comm)
