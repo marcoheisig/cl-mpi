@@ -49,7 +49,7 @@ THE SOFTWARE.
 ;; (defmpifun "MPI_Comm_set_info")
 ;; (defmpifun "MPI_Comm_set_name")
 (defmpifun "MPI_Comm_size" (comm *size))
-;; (defmpifun "MPI_Comm_split")
+(defmpifun "MPI_Comm_split" (comm color key *newcomm))
 ;; (defmpifun "MPI_Comm_split_type")
 (defmpifun "MPI_Comm_test_inter" (comm *flag))
 (defmpifun "MPI_Group_compare" (group1 group2 *result))
@@ -199,3 +199,10 @@ THE SOFTWARE.
     (setf (mpi-object-handle comm)
           (mem-ref handle #.foreign-mpi-object-type)))
   comm)
+
+(defun mpi-comm-split (color key &key (comm *standard-communicator*))
+  "Returns new communicator by partitioning comm according color and key."
+  (declare (type int color key)
+           (type mpi-comm comm))
+  (with-foreign-results ((newcomm 'mpi-comm))
+    (%mpi-comm-split comm color key newcomm)))

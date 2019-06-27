@@ -115,6 +115,7 @@
 ;;; contexts.lisp
 
    #:mpi-comm-group
+   #:mpi-comm-split
    #:mpi-group-size
    #:mpi-group-rank
    #:mpi-group-union
