@@ -201,7 +201,8 @@ THE SOFTWARE.
   comm)
 
 (defun mpi-comm-split (color key &key (comm *standard-communicator*))
-  "Returns new communicator by partitioning comm according color and key."
+  "Returns new communicator by partitioning a communicator according
+to color and key."
   (declare (type int color key)
            (type mpi-comm comm))
   (with-foreign-results ((newcomm 'mpi-comm))
