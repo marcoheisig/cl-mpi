@@ -201,8 +201,6 @@ THE SOFTWARE.
 (define-mpi-constant mpi-comm "MPI_COMM_SELF")
 (define-mpi-constant mpi-comm "MPI_COMM_NULL")
 (define-mpi-constant mpi-datatype "MPI_DATATYPE_NULL")
-(define-mpi-constant mpi-datatype "MPI_LB")
-(define-mpi-constant mpi-datatype "MPI_UB")
 (define-mpi-constant mpi-datatype "MPI_CHAR")
 (define-mpi-constant mpi-datatype "MPI_SIGNED_CHAR")
 (define-mpi-constant mpi-datatype "MPI_UNSIGNED_CHAR")

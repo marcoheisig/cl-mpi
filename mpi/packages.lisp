@@ -41,8 +41,6 @@
    #:+mpi-group-empty+
    #:+mpi-comm-world+
    #:+mpi-comm-self+
-   #:+mpi-lb+
-   #:+mpi-ub+
    #:+mpi-char+
    #:+mpi-signed-char+
    #:+mpi-unsigned-char+
