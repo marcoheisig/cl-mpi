@@ -55,7 +55,7 @@ THE SOFTWARE.
          ((:pointer :boolean) *flag)
          (:int
           count incount outcount insize outsize sendcount recvcount source dest
-          tag sendtag recvtag size root commute errorcode)
+          tag sendtag recvtag size root commute errorcode color key)
          (:boolean flag)
          (mpi-errhandler errhandler)
          (mpi-comm comm oldcomm comm1 comm2)
