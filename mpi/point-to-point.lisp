@@ -97,6 +97,20 @@ of at least SIZE bytes."
                        (recv-tag +mpi-any-tag+)
                        send-start send-end
                        recv-start recv-end)
+  "Simultaneously send and receive a message.  Behaves as if calls to
+MPI-SEND and MPI-RECV were issued in separate threads that were then
+joined.
+
+Returns three values:
+
+1. The size of the incoming message in bytes.
+
+2. The rank of the sender of the received message.  This value is
+   particularly useful if the SOURCE was specified as +MPI-ANY-SOURCE+.
+
+3. The tag of the sender of the received message.  This value is
+   particularly useful if the TAG was specified as +MPI-ANY-TAG+.
+"
   (declare (type simple-array send-data recv-data)
            (type int dest send-tag source recv-tag)
            (type mpi-comm comm)
@@ -106,10 +120,17 @@ of at least SIZE bytes."
       (static-vector-mpi-data send-data send-start send-end)
     (multiple-value-bind (recv-buf recv-type recv-count)
         (static-vector-mpi-data recv-data recv-start recv-end)
-      (%mpi-sendrecv
-       send-buf send-count send-type dest send-tag
-       recv-buf recv-count recv-type source recv-tag
-       comm (cffi:null-pointer)))))
+      (with-foreign-object (status '(:struct mpi-status))
+        (%mpi-sendrecv
+         send-buf send-count send-type dest send-tag
+         recv-buf recv-count recv-type source recv-tag
+         comm status)
+        (with-foreign-slots ((mpi-tag mpi-source mpi-error) status (:struct mpi-status))
+          (values
+           (with-foreign-results ((count :int))
+             (%mpi-get-count status +mpi-byte+ count))
+           mpi-source
+           mpi-tag))))))
 
 (defun mpi-send (array dest &key (comm *standard-communicator*)
                               start end
