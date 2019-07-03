@@ -166,15 +166,32 @@ mechanism such as sb-sys:with-pinned-objects."
                                 start end
                                 (tag +mpi-any-tag+))
   "Blocks until a message from a process with rank SOURCE and tag TAG has
-been received."
+been received.
+
+Returns three values:
+
+1. The size of the incoming message in bytes.
+
+2. The rank of the sender of the message.  This value is particularly
+   useful if the SOURCE was specified as +MPI-ANY-SOURCE+.
+
+3. The tag of the sender of the message.  This value is particularly
+   useful if the TAG was specified as +MPI-ANY-TAG+.
+"
   (declare (type simple-array array)
            (type int source tag)
            (type mpi-comm comm)
            (type index start end))
   (multiple-value-bind (ptr type count)
       (static-vector-mpi-data array start end)
-    ;; TODO check the mpi-status
-    (%mpi-recv ptr count type source tag comm (cffi:null-pointer))))
+    (with-foreign-object (status '(:struct mpi-status))
+      (%mpi-recv ptr count type source tag comm status)
+      (with-foreign-slots ((mpi-tag mpi-source mpi-error) status (:struct mpi-status))
+        (values
+         (with-foreign-results ((count :int))
+           (%mpi-get-count status +mpi-byte+ count))
+         mpi-source
+         mpi-tag)))))
 
 (defun mpi-irecv (array source &key (comm *standard-communicator*)
                                  start end
@@ -192,8 +209,18 @@ been received."
                            (tag +mpi-any-tag+)
                            (comm *standard-communicator*))
   "Block until a message with matching TAG and SOURCE has been sent on the
-communicator COMM. Return three values: The size of the incoming message in
-bytes, and the rank and tag of the sender."
+communicator COMM.
+
+Returns three values:
+
+1. The size of the incoming message in bytes.
+
+2. The rank of the sender of the message.  This value is particularly
+   useful if the SOURCE was specified as +MPI-ANY-SOURCE+.
+
+3. The tag of the sender of the message.  This value is particularly
+   useful if the TAG was specified as +MPI-ANY-TAG+.
+"
   (declare (type int source tag)
            (type mpi-comm comm))
   (with-foreign-object (status '(:struct mpi-status))
