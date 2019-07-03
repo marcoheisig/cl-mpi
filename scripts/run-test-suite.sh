@@ -47,7 +47,7 @@ test_image()
     echo "========================================="
     echo "Testing $LISP..."
 
-    mpiexec -n 4 $IMAGE
+    mpiexec -n 2 $IMAGE
     echo "...$LISP testing complete"
     echo "========================================="
     echo
