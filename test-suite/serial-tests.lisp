@@ -64,6 +64,32 @@ program."
       (mpi-comm-free c2)
       (mpi-comm-free c3))))
 
+(test (mpi-split :depends-on mpi-context)
+  "Test that mpi-comm-split is working."
+  (with-fresh-mpi-context
+    (let ((c1 (mpi-comm-split 0 0))
+          (c2 (mpi-comm-split 0 (mpi-comm-rank)))
+          (c3 (mpi-comm-split 0 (- (mpi-comm-rank))))
+          (c4 (mpi-comm-split (mpi-comm-rank) -1))
+          (c5 (mpi-comm-split +mpi-undefined+ 0)))
+      (unwind-protect
+           (progn
+             (is (= (mpi-comm-size c1) (mpi-comm-size)))
+             (is (= (mpi-comm-rank c1) (mpi-comm-rank)))
+             (is (= (mpi-comm-size c2) (mpi-comm-size)))
+             (is (= (mpi-comm-rank c2) (mpi-comm-rank)))
+             (is (= (mpi-comm-size c3) (mpi-comm-size)))
+             (is (= (mpi-comm-rank c3) (- (mpi-comm-size)
+                                          (mpi-comm-rank)
+                                          1)))
+             (is (= (mpi-comm-size c4) 1))
+             (is (= (mpi-comm-rank c4) 0))
+             (is (mpi-null c5))))
+      (mpi-comm-free c1)
+      (mpi-comm-free c2)
+      (mpi-comm-free c3)
+      (mpi-comm-free c4))))
+
 ;;; point to point communication
 
 (test (serial-mpi-sendrecv :depends-on mpi-context)
