@@ -8,8 +8,8 @@
 (in-package :cl-user)
 
 (defpackage :cl-mpi/examples/cellular
-  (:use :cl :alexandria :cl-mpi :static-vectors)
-  (:export #:main))
+  (:use :cl :alexandria :cl-mpi :static-vectors))
+
 (in-package :cl-mpi/examples/cellular)
 
 (defun printf (fmt &rest args)

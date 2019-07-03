@@ -6,6 +6,7 @@
 
 (defpackage :cl-mpi/examples/transmit-anything
   (:use :cl :alexandria :cl-mpi :static-vectors :cl-mpi-extensions))
+
 (in-package :cl-mpi/examples/transmit-anything)
 
 (defun printf (fmt &rest args)

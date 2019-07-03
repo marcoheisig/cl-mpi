@@ -6,6 +6,7 @@
 (defpackage :cl-mpi/examples/pingpong
   (:use :cl :alexandria :cl-mpi :static-vectors)
   (:export #:main))
+
 (in-package :cl-mpi/examples/pingpong)
 
 (defun printf (fmt &rest args)

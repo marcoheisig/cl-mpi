@@ -6,6 +6,7 @@
 (defpackage :cl-mpi/examples/ring
   (:use :cl :alexandria :cl-mpi :static-vectors)
   (:export #:main))
+
 (in-package :cl-mpi/examples/ring)
 
 (defun printf (fmt &rest args)

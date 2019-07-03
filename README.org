@@ -51,8 +51,8 @@ fails with something like "undefined reference to main", your SBCL is
 probably not built with the =:sb-linkable-runtime= feature.  You are
 affected by this when =(find :sb-linkable-runtime *features*)= returns
 NIL. In that case, you have to compile SBCL yourself, which is as simple as
-executing the following commands (where SOMEWHERE is the desired
-installation folder):
+executing the following commands, where SOMEWHERE is the desired
+installation folder
 #+BEGIN_SRC sh
 git clone git://git.code.sf.net/p/sbcl/sbcl
 cd sbcl
