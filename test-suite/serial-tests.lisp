@@ -55,8 +55,9 @@ program."
   (is (mpi-comm-free (mpi-comm-dup)))
   (let ((c1 *standard-communicator*)
         (c2 (mpi-comm-dup *standard-communicator*))
-        (c3 (mpi-comm-create (mpi-comm-group *standard-communicator*)
-                             :comm *standard-communicator*)))
+        (c3 (let ((group (mpi-comm-group *standard-communicator*)))
+              (unwind-protect (mpi-comm-create group :comm *standard-communicator*)
+                (mpi-group-free group)))))
     (unwind-protect
          (is (= (mpi-comm-size c1)
                 (mpi-comm-size c2)
