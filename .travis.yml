@@ -38,7 +38,7 @@ before_install:
 
 install:
   - wget http://prdownloads.sourceforge.net/sbcl/sbcl-1.5.4-x86-64-linux-binary.tar.bz2; tar -jxvf sbcl-1.5.4-x86-64-linux-binary.tar.bz2; cd sbcl-1.5.4-x86-64-linux; INSTALL_ROOT=$HOME/sbcl sh install.sh 
-  - curl -O https://beta.quicklisp.org/quicklisp.lisp; cp ./conf/travis-ci/install.lisp . ; $HOME/sbcl/bin/sbcl --load install.lisp
+  - cd $HOME; curl -O https://beta.quicklisp.org/quicklisp.lisp; cp ./conf/travis-ci/install.lisp . ; $HOME/sbcl/bin/sbcl --load install.lisp
   - cd quicklisp/local-projects; git clone https://github.com/marcoheisig/cl-mpi.git
 
 before_script:
