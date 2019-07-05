@@ -26,8 +26,10 @@ THE SOFTWARE.
 
 (in-package :cl-mpi)
 
-(defcfun "MPI_Wtime" :double
-  "Returns a (double) floating-point number of seconds, representing elapsed
+(progn
+  (setf (fdefinition 'mpi-wtime) (function %mpi-wtime))
+  (setf (documentation 'mpi-wtime 'function)
+        "Returns a (double) floating-point number of seconds, representing elapsed
 wall-clock time since some time in the past.
 
 The 'time in the past' is guaranteed not to change during the life of the
@@ -35,44 +37,16 @@ process.  The user is responsible for converting large numbers of seconds to
 other units if they are preferred.  This function is portable (it returns
 seconds, not 'ticks'), it allows high-resolution, and carries no unnecessary
 baggage.  The times returned are local to the node that called them. There is
-no requirement that different nodes return 'the same time.'")
+no requirement that different nodes return 'the same time.'"))
 
-(defcfun "MPI_Wtick" :double
-  "Returns the resolution of MPI-WTIME in seconds. That is, it returns, as a
+(progn
+  (setf (fdefinition 'mpi-wtick) (function %mpi-wtick))
+  (setf (documentation 'mpi-wtick 'function)
+        "Returns the resolution of MPI-WTIME in seconds. That is, it returns, as a
 double precision value, the number of seconds between successive clock
 ticks. For example, if the clock is implemented by the hardware as a counter
 that is incremented every millisecond, the value returned by MPI-WTICK should
-be 0.001")
-
-(defmpifun "MPI_Abort" (comm errorcode))
-;; (defmpifun "MPI_Add_error_class")
-;; (defmpifun "MPI_Add_error_code")
-;; (defmpifun "MPI_Add_error_string")
-(defmpifun "MPI_Alloc_mem" (count ptr *buf))
-(defmpifun "MPI_Comm_call_errhandler" (comm errorcode))
-;; (defmpifun "MPI_Comm_create_errhandler")
-;; (defmpifun "MPI_Comm_get_errhandler")
-(defmpifun "MPI_Comm_set_errhandler" (comm errhandler))
-;; (defmpifun "MPI_Errhandler_free")
-;; (defmpifun "MPI_Error_class")
-(defmpifun "MPI_Error_string" (errorcode string *size))
-;; (defmpifun "MPI_File_call_errhandler")
-;; (defmpifun "MPI_File_create_errhandler")
-;; (defmpifun "MPI_File_get_errhandler")
-;; (defmpifun "MPI_File_set_errhandler")
-(defmpifun "MPI_Finalize" ())
-(defmpifun "MPI_Finalized" (*flag))
-(defmpifun "MPI_Free_mem" (ptr))
-;; (defmpifun "MPI_Get_library_version")
-(defmpifun "MPI_Get_processor_name" (string *size))
-;; (defmpifun "MPI_Get_version")
-(defmpifun "MPI_Init" (argc argv))
-(defmpifun "MPI_Init_thread" (argc argv (required mpi-thread-options) (provided :pointer)))
-(defmpifun "MPI_Initialized" (*flag))
-;; (defmpifun "MPI_Win_call_errhandler")
-;; (defmpifun "MPI_Win_create_errhandler")
-;; (defmpifun "MPI_Win_get_errhandler")
-;; (defmpifun "MPI_Win_set_errhandler")
+be 0.001"))
 
 (defun mpi-init (&key (thread-support nil thread-support-p))
   "Initialize MPI. If supplied, the keyword parameter THREAD-SUPPORT

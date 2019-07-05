@@ -30,6 +30,13 @@
    #:mpi-op
    #:mpi-info
    #:mpi-request
+   #:mpi-message
+   #:mpi-file
+   #:mpi-win
+   #:mpi-t-enum
+   #:mpi-t-cvar-handle
+   #:mpi-t-pvar-handle
+   #:mpi-t-pvar-session
 
    ;; MPI constants
    #:+mpi-library+
