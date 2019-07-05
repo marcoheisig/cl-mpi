@@ -15,7 +15,7 @@ cache:
   directories:
     - $HOME/sbcl
     - $HOME/quicklisp
-    - $HOME/sbcl-install
+
 
 branches:
   only:
@@ -36,12 +36,12 @@ before_install:
   - ./conf/travis-ci/install-mpi.sh $MPI
 
 install:
-  - git clone git://git.code.sf.net/p/sbcl/sbcl; cd sbcl; sh make.sh --prefix=$HOME/sbcl-install --fancy --with-sb-linkable-runtime --with-sb-dynamic-core && sh install.sh
-  - curl -O https://beta.quicklisp.org/quicklisp.lisp; $HOME/sbcl-install/bin/sbcl --load quicklisp.lisp
+  - wget http://prdownloads.sourceforge.net/sbcl/sbcl-1.5.4-x86-64-linux-binary.tar.bz2; tar -jxvf sbcl-1.5.4-x86-64-linux-binary.tar.bz2; cd sbcl-1.5.4-x86-64-linux; INSTALL_ROOT=$HOME/sbcl sh install.sh 
+  - curl -O https://beta.quicklisp.org/quicklisp.lisp; $HOME/sbcl/bin/sbcl --load quicklisp.lisp
   - cd quicklisp/local-projects; git clone https://github.com/marcoheisig/cl-mpi.git
 
 before_script:
-  - export PATH=$PATH:$PWD/sbcl-install/bin
+  - export PATH=$PATH:$PWD/sbcl/bin
 
 script:
   - ./scripts/run-test-suite.sh sbcl
