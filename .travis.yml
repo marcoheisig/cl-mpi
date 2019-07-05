@@ -7,6 +7,7 @@ env:
     - HYDRA_LAUNCHER=fork
     - OMPI_MCA_plm=isolated
     - OMPI_MCA_rmaps_base_oversubscribe=true
+    - SBCL_HOME=$HOME/sbcl/lib/sbcl
   matrix:
     - MPI=mpich
     - MPI=openmpi
