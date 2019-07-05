@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/pavanakumar/cl-mpi.svg?branch=master)](https://travis-ci.org/pavanakumar/cl-mpi)
-
-#+TITLE: cl-mpi
+#+TITLE: cl-mpi [![Build Status](https://travis-ci.org/pavanakumar/cl-mpi.svg?branch=master)](https://travis-ci.org/pavanakumar/cl-mpi)
 
 cl-mpi provides convenient CFFI bindings for the Message Passing
 Interface (MPI). MPI is typically used in High Performance Computing to
