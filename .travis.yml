@@ -45,7 +45,7 @@ before_script:
   - export PATH=$PATH:$PWD/sbcl/bin
 
 script:
-  - ./scripts/run-test-suite.sh sbcl
+  - $HOME/quicklisp/local-projects/cl-mpi/scripts/run-test-suite.sh sbcl
 
 #notifications:
 #  email: false
