@@ -1,0 +1,52 @@
+language: common-lisp
+sudo: true
+dist: trusty
+
+env:
+  global:
+    - HYDRA_LAUNCHER=fork
+    - OMPI_MCA_plm=isolated
+    - OMPI_MCA_rmaps_base_oversubscribe=true
+    - SBCL_HOME=$HOME/sbcl/lib/sbcl
+  matrix:
+    - MPI=mpich
+    - MPI=openmpi
+
+cache:
+  directories:
+    - $HOME/sbcl
+    - $HOME/quicklisp
+
+
+branches:
+  only:
+    - master
+    - ci/travis
+
+git:
+  depth: 3
+
+cache:
+  apt: true
+
+addons:
+  apt:
+    update: true
+
+before_install:
+  - ./conf/travis-ci/install-mpi.sh $MPI
+  - cp ./conf/travis-ci/install.lisp .
+install:
+  - wget http://prdownloads.sourceforge.net/sbcl/sbcl-1.5.4-x86-64-linux-binary.tar.bz2; tar -jxvf sbcl-1.5.4-x86-64-linux-binary.tar.bz2; cd sbcl-1.5.4-x86-64-linux; INSTALL_ROOT=$HOME/sbcl sh install.sh ; cd ..
+  - curl -O https://beta.quicklisp.org/quicklisp.lisp; $HOME/sbcl/bin/sbcl --load install.lisp
+  - cd $HOME/quicklisp/local-projects; git clone https://github.com/marcoheisig/cl-mpi.git
+
+before_script:
+  - export PATH=$PATH:$PWD/sbcl/bin
+
+script:
+  - $HOME/quicklisp/local-projects/cl-mpi/scripts/run-test-suite.sh sbcl
+
+#notifications:
+#  email: false
+
