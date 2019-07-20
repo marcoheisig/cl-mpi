@@ -218,7 +218,14 @@ THE SOFTWARE.
             (mpi-datatype-type 'mpi-datatype)
             (mpi-op-type 'mpi-op)
             (mpi-info-type 'mpi-info)
-            (mpi-request-type 'mpi-request))))
+            (mpi-message-type 'mpi-message)
+            (mpi-request-type 'mpi-request)
+            (mpi-file-type 'mpi-file)
+            (mpi-win-type 'mpi-win)
+            (mpi-t-enum-type 'mpi-t-enum)
+            (mpi-t-cvar-handle-type 'mpi-t-cvar-handle)
+            (mpi-t-pvar-handle-type 'mpi-t-pvar-handle)
+            (mpi-t-pvar-session-type 'mpi-t-pvar-session))))
     `(make-instance ',instance-type :handle ,value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
