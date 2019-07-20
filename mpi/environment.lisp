@@ -71,12 +71,12 @@ required level of thread support."
     (initialize-mpi-constants)
     (if (not thread-support-p)
         (%mpi-init (null-pointer) (null-pointer))
-        (let ((required
-                (cffi:foreign-enum-value 'mpi-thread-options thread-support))
-              (provided
-                (with-foreign-results ((provided :int))
-                  (%mpi-init-thread (null-pointer) (null-pointer)
-                                    thread-support provided))))
+        (let* ((required
+                 (cffi:foreign-enum-value 'mpi-thread-options thread-support))
+               (provided
+                 (with-foreign-results ((provided :int))
+                   (%mpi-init-thread (null-pointer) (null-pointer)
+                                     required provided))))
           (when (> required provided)
             (error "The required level of thread support is ~W,~@
                     but this MPI implementation can only provide ~W."
