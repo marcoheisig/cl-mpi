@@ -43,4 +43,5 @@ mandatory function arguments."
      (:file "contexts")
      (:file "environment")
      (:file "point-to-point")
-     (:file "one-sided")))))
+     (:file "one-sided")
+     (:file "file")))))
