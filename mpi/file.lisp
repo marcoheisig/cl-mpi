@@ -46,8 +46,8 @@ Returns a MPI-FILE handle to the open file."
     (setf (mem-ref fh 'mpi-file) file-handle)
     (%mpi-file-close fh)))
 
-(defmacro with-open-mpi-file ((file-handle filename amode &key (info +mpi-info-null+)
-                                                            (comm *standard-communicator*))
+(defmacro with-open-mpi-file ((file-handle filename amode &key (info '+mpi-info-null+)
+                                                            (comm '*standard-communicator*))
                               &body body)
   `(let ((,file-handle (mpi-file-open ,filename ,amode :info ,info :comm ,comm)))
      (unwind-protect
