@@ -109,7 +109,7 @@ MPI-FINALIZE."
   (with-foreign-results ((flag :boolean))
     (%mpi-finalized flag)))
 
-(defun mpi-abort(&key (comm *standard-communicator*) (errcode -1))
+(defun mpi-abort (&key (comm *standard-communicator*) (errcode -1))
   "This routine makes a 'best attempt' to abort all tasks in the group of
 comm. This function does not require that the invoking environment take any
 action with the error code. However, a Unix or POSIX environment should handle

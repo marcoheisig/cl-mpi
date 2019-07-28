@@ -62,6 +62,7 @@
    #:+mpi-unsigned-long-long+
    #:+mpi-float+
    #:+mpi-double+
+   #:+mpi-double-complex+
    #:+mpi-long-double+
    #:+mpi-wchar+
    #:+mpi-c-bool+
