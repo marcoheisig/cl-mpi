@@ -88,39 +88,6 @@ THE SOFTWARE.
 (defclass mpi-object ()
   ((%handle :accessor mpi-object-handle :initarg :handle)))
 
-(defclass mpi-errhandler (mpi-object) ())
-
-(defclass mpi-comm (mpi-object) ())
-
-(defclass mpi-group (mpi-object) ())
-
-(defclass mpi-datatype (mpi-object) ())
-
-(defclass mpi-op (mpi-object) ())
-
-(defclass mpi-info (mpi-object) ())
-
-(defclass mpi-request (mpi-object) ())
-
-(defclass mpi-message (mpi-object) ())
-
-(defclass mpi-file (mpi-object) ())
-
-(defclass mpi-win (mpi-object) ())
-
-(defclass mpi-t-enum (mpi-object) ())
-
-(defclass mpi-t-cvar-handle (mpi-object) ())
-
-(defclass mpi-t-pvar-handle (mpi-object) ())
-
-(defclass mpi-t-pvar-session (mpi-object) ())
-
-;;; some deftypes for the most common types handled by MPI
-(deftype int () '(signed-byte 32))
-
-(deftype index () '(or null (integer 0 #.array-total-size-limit)))
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (define-constant foreign-mpi-object-type
       (if (boundp '|OPEN_MPI|) :pointer :int)))
@@ -133,52 +100,39 @@ THE SOFTWARE.
       ;; represent them with ints.
       #.foreign-mpi-object-type))
 
-(define-foreign-type mpi-errhandler-type (mpi-object-type)
-  () (:simple-parser mpi-errhandler))
+;;; some deftypes for the most common types handled by MPI
+(deftype int () '(signed-byte 32))
 
-(define-foreign-type mpi-comm-type (mpi-object-type)
-  () (:simple-parser mpi-comm))
-
-(define-foreign-type mpi-group-type (mpi-object-type)
-  () (:simple-parser mpi-group))
-
-(define-foreign-type mpi-datatype-type (mpi-object-type)
-  () (:simple-parser mpi-datatype))
-
-(define-foreign-type mpi-op-type (mpi-object-type)
-  () (:simple-parser mpi-op))
-
-(define-foreign-type mpi-info-type (mpi-object-type)
-  () (:simple-parser mpi-info))
-
-(define-foreign-type mpi-message-type (mpi-object-type)
-  () (:simple-parser mpi-message))
-
-(define-foreign-type mpi-request-type (mpi-object-type)
-  () (:simple-parser mpi-request))
-
-(define-foreign-type mpi-file-type (mpi-object-type)
-  () (:simple-parser mpi-file))
-
-(define-foreign-type mpi-win-type (mpi-object-type)
-  () (:simple-parser mpi-win))
-
-(define-foreign-type mpi-t-enum-type (mpi-object-type)
-  () (:simple-parser mpi-t-enum))
-
-(define-foreign-type mpi-t-cvar-handle-type (mpi-object-type)
-  () (:simple-parser mpi-t-cvar-handle))
-
-(define-foreign-type mpi-t-pvar-handle-type (mpi-object-type)
-  () (:simple-parser mpi-t-pvar-handle))
-
-(define-foreign-type mpi-t-pvar-session-type (mpi-object-type)
-  () (:simple-parser mpi-t-pvar-session))
+(deftype index () '(or null (integer 0 #.array-total-size-limit)))
 
 (define-foreign-type mpi-error-type ()
   ()
   (:actual-type :int)
   (:simple-parser mpi-error-code))
+
+(defmacro define-mpi-type (name)
+  (alexandria:once-only (name)
+    (let* ((type-name (concatenate 'string (symbol-name name) "-TYPE"))
+           (type (intern type-name)))
+      `(progn
+         (defclass ,name (mpi-object) ())
+         (define-foreign-type ,type (mpi-object-type)
+           () (:simple-parser ,name))))))
+
+(define-mpi-type mpi-errhandler)
+(define-mpi-type mpi-comm)
+(define-mpi-type mpi-group)
+(define-mpi-type mpi-datatype)
+(define-mpi-type mpi-op)
+(define-mpi-type mpi-info)
+(define-mpi-type mpi-request)
+(define-mpi-type mpi-message)
+(define-mpi-type mpi-file)
+(define-mpi-type mpi-win)
+(define-mpi-type mpi-t-enum)
+(define-mpi-type mpi-t-cvar-handle)
+(define-mpi-type mpi-t-pvar-handle)
+(define-mpi-type mpi-t-pvar-session)
 
 ;;; Function pointer names for callback arguments.
 (defctype mpi-datarep-extent-function :pointer)
