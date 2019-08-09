@@ -111,13 +111,12 @@ THE SOFTWARE.
   (:simple-parser mpi-error-code))
 
 (defmacro define-mpi-type (name)
-  (alexandria:once-only (name)
-    (let* ((type-name (concatenate 'string (symbol-name name) "-TYPE"))
-           (type (intern type-name)))
-      `(progn
-         (defclass ,name (mpi-object) ())
-         (define-foreign-type ,type (mpi-object-type)
-           () (:simple-parser ,name))))))
+  (let* ((type-name (concatenate 'string (symbol-name name) "-TYPE"))
+         (type (intern type-name)))
+    `(progn
+       (defclass ,name (mpi-object) ())
+       (define-foreign-type ,type (mpi-object-type)
+         () (:simple-parser ,name)))))
 
 (define-mpi-type mpi-errhandler)
 (define-mpi-type mpi-comm)
