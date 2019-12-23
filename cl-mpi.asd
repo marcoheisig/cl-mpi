@@ -31,6 +31,9 @@ mandatory function arguments."
      ;; Create a small library to portably access the MPI runtime.
      (:mpi-wrapper-file "wrap")
 
+     ;; Low-level bindings.
+     (:file "low-level")
+
      ;; MPI related utilities.
      (:file "utilities")
 
@@ -40,4 +43,5 @@ mandatory function arguments."
      (:file "contexts")
      (:file "environment")
      (:file "point-to-point")
-     (:file "one-sided")))))
+     (:file "one-sided")
+     (:file "file")))))

@@ -30,6 +30,13 @@
    #:mpi-op
    #:mpi-info
    #:mpi-request
+   #:mpi-message
+   #:mpi-file
+   #:mpi-win
+   #:mpi-t-enum
+   #:mpi-t-cvar-handle
+   #:mpi-t-pvar-handle
+   #:mpi-t-pvar-session
 
    ;; MPI constants
    #:+mpi-library+
@@ -55,6 +62,7 @@
    #:+mpi-unsigned-long-long+
    #:+mpi-float+
    #:+mpi-double+
+   #:+mpi-double-complex+
    #:+mpi-long-double+
    #:+mpi-wchar+
    #:+mpi-c-bool+

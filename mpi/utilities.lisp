@@ -24,77 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 |#
 
-(in-package :mpi)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;; DEFMPIFUN
-;;;
-;;; A CFFI:DEFCFUN invocation looks something like
-;;; (CFFI:DEFCFUN NAMESPEC RETURN-VALUE (ARG1 TYPE1) (ARG2 TYPE2) ...)
-;;;
-;;; A typical MPI routine takes sometimes more than eight arguments and
-;;; always returns an MPI-ERROR-CODE. To improve readablility, I provide a
-;;; function DEFMPIFUN, which expands into defcfun, but attempts to look up
-;;; the type of a variable in the table *MPI-NAMING-CONVENTIONS*.
-;;;
-;;; example: the type of an argument variable COUNT is always :INTEGER.
-
-(defvar *mpi-naming-conventions*
-  (let ((table (make-hash-table)))
-    (flet ((introduce-conventions (type &rest symbols)
-             (loop for symbol in symbols do
-               (setf (gethash symbol table) type))))
-      (mapc
-       (lambda (x) (apply #'introduce-conventions x))
-       '((:pointer
-          *buf *sendbuf *recvbuf *inbuf *outbuf *inoutbuf fun argc argv ptr)
-         ((:pointer :int)
-          *result *count *position *size *rank *index *outcount *commute *keyval)
-         (:string string)
-         ((:pointer :boolean) *flag)
-         (:int
-          count incount outcount insize outsize sendcount recvcount source dest
-          tag sendtag recvtag size root commute errorcode color key)
-         (:boolean flag)
-         (mpi-errhandler errhandler)
-         (mpi-comm comm oldcomm comm1 comm2)
-         (mpi-group group group1 group2)
-         (mpi-datatype datatype sendtype recvtype oldtype)
-         (mpi-op op)
-         (mpi-request request)
-         ((:pointer (:struct mpi-status)) *status)
-         ((:pointer mpi-op) *op)
-         ((:pointer mpi-message) *message)
-         ((:pointer mpi-request) *request)
-         ((:pointer mpi-comm) *newcomm *comm)
-         ((:pointer mpi-group) *newgroup *group)
-         ((:pointer mpi-datatype) *newtype)
-         ((:pointer (:struct mpi-status)) statuses)
-         ((:pointer mpi-datatype) sendtypes recvtypes)
-         ((:pointer mpi-request) requests)
-         ((:array :int *) indices)
-         ((:pointer (:array :int *)) ranges)
-         ((:array :int *)
-          ranks ranks1 ranks2 sendcounts recvcounts displs sdispls rdispls))))
-    table))
-
-(defmacro defmpifun (foreign-name (&rest args) &key (introduced "1.0"))
-  (check-type foreign-name string)
-  (let ((lisp-name
-          (intern
-           (concatenate 'string "%" (substitute #\- #\_ (string-upcase foreign-name)))
-           '#:cl-mpi))
-        (expanded-args
-          (loop for arg in args
-                collect
-                (if (symbolp arg)
-                    `(,arg ,(gethash arg *mpi-naming-conventions*))
-                    arg))))
-    ;; Currently I do not handle deprecation - this is ok because as of June
-    ;; 2015 the MPI Committee also has no way to handle deprecation.
-    `(since-mpi-version ,introduced
-       (defcfun (,foreign-name ,lisp-name) mpi-error-code ,@expanded-args))))
+(in-package :cl-mpi)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
